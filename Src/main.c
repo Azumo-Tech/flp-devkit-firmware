@@ -35,7 +35,7 @@
 #include "stm32l1xx_hal.h"
 
 /* USER CODE BEGIN Includes */
-
+#include "memlcd.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -48,11 +48,16 @@ SPI_HandleTypeDef hspi2;
 DMA_HandleTypeDef hdma_spi1_tx;
 DMA_HandleTypeDef hdma_spi2_rx;
 
+PCD_HandleTypeDef hpcd_USB_FS;
+
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 
+MEMLCD_HandleTypeDef hmemlcd;
+
 uint8_t screenbuf[240][50];
 uint8_t phase;
+uint32_t show;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -64,6 +69,7 @@ static void MX_ADC_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_RTC_Init(void);
 static void MX_SPI2_Init(void);
+static void MX_USB_PCD_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
@@ -96,10 +102,14 @@ int main(void)
   MX_SPI1_Init();
   MX_RTC_Init();
   MX_SPI2_Init();
+  MX_USB_PCD_Init();
 
   /* USER CODE BEGIN 2 */
   HAL_GPIO_WritePin(LCD_DISP_GPIO_Port, LCD_DISP_Pin, 1);
   HAL_GPIO_WritePin(LCD_EXTMODE_GPIO_Port, LCD_EXTMODE_Pin, 1);
+
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, 1);
+  //MEMLCD_clear_all(&hmemlcd);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -107,18 +117,31 @@ int main(void)
   while (1)
   {
   /* USER CODE END WHILE */
+
   /* USER CODE BEGIN 3 */
-	  uint8_t header[2] = {0b001, 1};
-	  while ((phase & 1)) HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
+	  uint8_t header[2] = {0b001, 1,};
+	  //while ((phase & 1))HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
+	  //uint32_t addr = 1 + (0)*0x3000;
+	  uint8_t cmd[] =  {0x03, show>>16, show>>8 & 0xff, (1+show)&0xff};
+	  show += 1000;
+	  if (show >= 128*1024) show = 0;
+	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, 0);
+	  HAL_SPI_Transmit(&hspi2, (void*)cmd, 4, 10);
+	  HAL_SPI_Receive(&hspi2, (void*)screenbuf, 50*240, 100);
+	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, 1);
+
 	  HAL_GPIO_WritePin(LCD_CS_GPIO_Port, LCD_CS_Pin, 1);
 	  for (header[1] = 1; header[1] <=240; header[1]++) {
 		  HAL_SPI_Transmit(&hspi1, header, 2, 10);
+		  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, 1);
 		  HAL_SPI_Transmit(&hspi1, &(screenbuf[header[1]-1][0]), 50, 10);
-		  for (int i=0; i<50; i++) {screenbuf[header[1]-1][i] = phase;}
+		  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, 0);
+
+		  //for (int i=0; i<50; i++) {screenbuf[header[1]-1][i] = phase;}
 	  }
 	  HAL_SPI_Transmit(&hspi1, header, 2, 10);
 	  HAL_GPIO_WritePin(LCD_CS_GPIO_Port, LCD_CS_Pin, 0);
-	  while (!(phase & 1)) HAL_PWR_EnterSLEEPMode(PWR_LOWPOWERREGULATOR_ON, PWR_SLEEPENTRY_WFI);
+	  //while (!(phase & 1))HAL_PWR_EnterSLEEPMode(PWR_LOWPOWERREGULATOR_ON, PWR_SLEEPENTRY_WFI);
   }
   /* USER CODE END 3 */
 
@@ -139,13 +162,15 @@ void SystemClock_Config(void)
 
     /**Initializes the CPU, AHB and APB busses clocks 
     */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_LSE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_HSE
+                              |RCC_OSCILLATORTYPE_LSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.LSEState = RCC_LSE_ON;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.HSICalibrationValue = 16;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL3;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL8;
   RCC_OscInitStruct.PLL.PLLDIV = RCC_PLL_DIV4;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
@@ -156,7 +181,7 @@ void SystemClock_Config(void)
     */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSE;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
@@ -323,6 +348,24 @@ static void MX_SPI2_Init(void)
 
 }
 
+/* USB init function */
+static void MX_USB_PCD_Init(void)
+{
+
+  hpcd_USB_FS.Instance = USB;
+  hpcd_USB_FS.Init.dev_endpoints = 8;
+  hpcd_USB_FS.Init.speed = PCD_SPEED_FULL;
+  hpcd_USB_FS.Init.ep0_mps = DEP0CTL_MPS_8;
+  hpcd_USB_FS.Init.phy_itface = PCD_PHY_EMBEDDED;
+  hpcd_USB_FS.Init.low_power_enable = DISABLE;
+  hpcd_USB_FS.Init.battery_charging_enable = DISABLE;
+  if (HAL_PCD_Init(&hpcd_USB_FS) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+}
+
 /** 
   * Enable DMA controller clock
   */
@@ -376,7 +419,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(LCD_DISP_GPIO_Port, LCD_DISP_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, LCD_EXTCOM_Pin|LD4_Pin|LD3_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, LCD_EXTCOM_Pin|LD4_Pin|LD3_Pin|GPIO_PIN_12, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : IDD_CNT_EN_Pin LCD_EXTMODE_Pin */
   GPIO_InitStruct.Pin = IDD_CNT_EN_Pin|LCD_EXTMODE_Pin;
@@ -424,7 +467,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(LCD_DISP_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : LCD_EXTCOM_Pin LD4_Pin LD3_Pin */
-  GPIO_InitStruct.Pin = LCD_EXTCOM_Pin|LD4_Pin|LD3_Pin;
+  GPIO_InitStruct.Pin = LCD_EXTCOM_Pin|LD4_Pin|LD3_Pin|GPIO_PIN_12;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
