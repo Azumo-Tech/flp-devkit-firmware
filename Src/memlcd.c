@@ -4,9 +4,9 @@
 
 #include <stdint.h>
 
-extern SPI_HandleTypeDef hspi1;
 
 void MEMLCD_init(MEMLCD_HandleTypeDef *hmemlcd) {
+
 	HAL_GPIO_WritePin(hmemlcd->EXTMODE_Port, hmemlcd->EXTMODE_Pin, 1);
 }
 
@@ -40,5 +40,5 @@ void MEMLCD_update_area(MEMLCD_HandleTypeDef *hmemlcd,
 	}
 	cmd[0] = cmd[1] = 0;
 	HAL_SPI_Transmit(hmemlcd->hspi, cmd, 2, 10);
-	HAL_GPIO_WritePin(hmemlcd->CS_Port, hmemlcd->CS_Pin, 1);
+	HAL_GPIO_WritePin(hmemlcd->CS_Port, hmemlcd->CS_Pin, 0);
 }

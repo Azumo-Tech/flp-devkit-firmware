@@ -2,9 +2,9 @@
 #define __MEMLCD_H
 
 enum MEMLCD_Model {
-	SHARP_270,
-	SHARP_126,
-	JDI_270
+	MEMLCD_SHARP_270,
+	MEMLCD_SHARP_126,
+	MEMLCD_JDI_270
 };
 
 typedef struct MEMLCD_Handle {
@@ -25,5 +25,10 @@ typedef struct MEMLCD_Handle {
 void MEMLCD_init(MEMLCD_HandleTypeDef *hmemlcd);
 
 void MEMLCD_clear_all(MEMLCD_HandleTypeDef *hmemlcd);
+
+void MEMLCD_set_disp(MEMLCD_HandleTypeDef *hmemlcd, uint8_t state);
+
+void MEMLCD_update_area(MEMLCD_HandleTypeDef *hmemlcd,
+		uint8_t *buffer, uint8_t start, uint8_t end);
 
 #endif

@@ -1,10 +1,10 @@
 /**
   ******************************************************************************
-  * @file      startup_stm32l152xc.s
+  * @file      startup_stm32l151xe.s
   * @author    MCD Application Team
   * @version   V2.2.0
   * @date      01-July-2016
-  * @brief     STM32L152XC Devices vector table for 
+  * @brief     STM32L151XE Devices vector table for 
   *            Atollic toolchain.
   *            This module performs:
   *                - Set the initial SP
@@ -182,7 +182,7 @@ g_pfnVectors:
   .word DAC_IRQHandler
   .word COMP_IRQHandler
   .word EXTI9_5_IRQHandler
-  .word LCD_IRQHandler  
+  .word 0  
   .word TIM9_IRQHandler
   .word TIM10_IRQHandler
   .word TIM11_IRQHandler
@@ -206,8 +206,8 @@ g_pfnVectors:
   .word 0
   .word TIM5_IRQHandler
   .word SPI3_IRQHandler
-  .word 0
-  .word 0
+  .word UART4_IRQHandler
+  .word UART5_IRQHandler
   .word DMA2_Channel1_IRQHandler
   .word DMA2_Channel2_IRQHandler
   .word DMA2_Channel3_IRQHandler
@@ -221,7 +221,7 @@ g_pfnVectors:
   .word 0
   .word 0
   .word BootRAM          /* @0x108. This is for boot in RAM mode for 
-                            STM32L152XC devices. */
+                            STM32L151XE devices. */
 
 /*******************************************************************************
 *
@@ -330,9 +330,6 @@ g_pfnVectors:
   .weak EXTI9_5_IRQHandler
   .thumb_set EXTI9_5_IRQHandler,Default_Handler
 
-  .weak LCD_IRQHandler
-  .thumb_set LCD_IRQHandler,Default_Handler  
-
   .weak TIM9_IRQHandler
   .thumb_set TIM9_IRQHandler,Default_Handler
 
@@ -399,6 +396,12 @@ g_pfnVectors:
   .weak SPI3_IRQHandler
   .thumb_set SPI3_IRQHandler,Default_Handler
 
+  .weak UART4_IRQHandler
+  .thumb_set UART4_IRQHandler,Default_Handler
+
+  .weak UART5_IRQHandler
+  .thumb_set UART5_IRQHandler,Default_Handler
+  
   .weak DMA2_Channel1_IRQHandler
   .thumb_set DMA2_Channel1_IRQHandler,Default_Handler
 
