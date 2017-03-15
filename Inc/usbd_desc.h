@@ -1,7 +1,8 @@
 /**
   ******************************************************************************
-  * File Name          : main.h
-  * Description        : This file contains the common defines of the application
+  * @file           : usbd_desc.h
+  * @version        : v1.0_Cube
+  * @brief          : Header for usbd_desc file.
   ******************************************************************************
   *
   * Copyright (c) 2017 STMicroelectronics International N.V. 
@@ -39,71 +40,75 @@
   * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   *
   ******************************************************************************
-  */
+*/
+
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef __MAIN_H
-#define __MAIN_H
-  /* Includes ------------------------------------------------------------------*/
+#ifndef __USBD_DESC__H__
+#define __USBD_DESC__H__
 
-/* USER CODE BEGIN Includes */
+#ifdef __cplusplus
+ extern "C" {
+#endif
+/* Includes ------------------------------------------------------------------*/
+#include "usbd_def.h"
 
-/* USER CODE END Includes */
+/** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
+  * @{
+  */
+  
+/** @defgroup USB_DESC
+  * @brief general defines for the usb device library file
+  * @{
+  */ 
 
-/* Private define ------------------------------------------------------------*/
+/** @defgroup USB_DESC_Exported_Defines
+  * @{
+  */
 
-#define N_PGOOD_Pin GPIO_PIN_13
-#define N_PGOOD_GPIO_Port GPIOC
-#define BT1_Pin GPIO_PIN_0
-#define BT1_GPIO_Port GPIOA
-#define BT2_Pin GPIO_PIN_1
-#define BT2_GPIO_Port GPIOA
-#define BT3_Pin GPIO_PIN_2
-#define BT3_GPIO_Port GPIOA
-#define LED_ISET_Pin GPIO_PIN_4
-#define LED_ISET_GPIO_Port GPIOA
-#define CHG_LIMIT_Pin GPIO_PIN_4
-#define CHG_LIMIT_GPIO_Port GPIOC
-#define N_CHARGING_Pin GPIO_PIN_5
-#define N_CHARGING_GPIO_Port GPIOC
-#define GPIO0_Pin GPIO_PIN_0
-#define GPIO0_GPIO_Port GPIOB
-#define GPIO1_Pin GPIO_PIN_1
-#define GPIO1_GPIO_Port GPIOB
-#define MEM_CS_Pin GPIO_PIN_12
-#define MEM_CS_GPIO_Port GPIOB
-#define MEM_SCK_Pin GPIO_PIN_13
-#define MEM_SCK_GPIO_Port GPIOB
-#define MEM_SO_Pin GPIO_PIN_14
-#define MEM_SO_GPIO_Port GPIOB
-#define MEM_SI_Pin GPIO_PIN_15
-#define MEM_SI_GPIO_Port GPIOB
-#define EN_BOOST_Pin GPIO_PIN_15
-#define EN_BOOST_GPIO_Port GPIOA
-#define LCD_SCK_Pin GPIO_PIN_10
-#define LCD_SCK_GPIO_Port GPIOC
-#define LCD_SI_Pin GPIO_PIN_12
-#define LCD_SI_GPIO_Port GPIOC
-#define LCD_CS_Pin GPIO_PIN_2
-#define LCD_CS_GPIO_Port GPIOD
-#define LCD_EXTMODE_Pin GPIO_PIN_3
-#define LCD_EXTMODE_GPIO_Port GPIOB
-#define LCD_DISP_Pin GPIO_PIN_4
-#define LCD_DISP_GPIO_Port GPIOB
-#define LCD_EXTCOM_Pin GPIO_PIN_5
-#define LCD_EXTCOM_GPIO_Port GPIOB
-#define LED_PWR_Pin GPIO_PIN_8
-#define LED_PWR_GPIO_Port GPIOB
-/* USER CODE BEGIN Private defines */
+/**
+  * @}
+  */ 
 
-/* USER CODE END Private defines */
+/** @defgroup USBD_DESC_Exported_TypesDefinitions
+  * @{
+  */
+/**
+  * @}
+  */ 
+
+/** @defgroup USBD_DESC_Exported_Macros
+  * @{
+  */ 
+/**
+  * @}
+  */ 
+
+/** @defgroup USBD_DESC_Exported_Variables
+  * @{
+  */ 
+extern USBD_DescriptorsTypeDef FS_Desc;
+/**
+  * @}
+  */ 
+
+/** @defgroup USBD_DESC_Exported_FunctionsPrototype
+  * @{
+  */ 
+  
+/**
+  * @}
+  */ 
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* __USBD_DESC_H */
 
 /**
   * @}
   */ 
 
 /**
-  * @}
+* @}
 */ 
-
-#endif /* __MAIN_H */
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

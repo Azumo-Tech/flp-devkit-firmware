@@ -1,7 +1,8 @@
 /**
   ******************************************************************************
-  * File Name          : main.h
-  * Description        : This file contains the common defines of the application
+  * @file           : USB_DEVICE  
+  * @version        : v1.0_Cube
+  * @brief          : This file implements the USB Device 
   ******************************************************************************
   *
   * Copyright (c) 2017 STMicroelectronics International N.V. 
@@ -39,71 +40,38 @@
   * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   *
   ******************************************************************************
+*/
+
+/* Includes ------------------------------------------------------------------*/
+
+#include "usb_device.h"
+#include "usbd_core.h"
+#include "usbd_desc.h"
+#include "usbd_cdc.h"
+#include "usbd_cdc_if.h"
+
+/* USB Device Core handle declaration */
+USBD_HandleTypeDef hUsbDeviceFS;
+
+/* init function */				        
+void MX_USB_DEVICE_Init(void)
+{
+  /* Init Device Library,Add Supported Class and Start the library*/
+  USBD_Init(&hUsbDeviceFS, &FS_Desc, DEVICE_FS);
+
+  USBD_RegisterClass(&hUsbDeviceFS, &USBD_CDC);
+
+  USBD_CDC_RegisterInterface(&hUsbDeviceFS, &USBD_Interface_fops_FS);
+
+  USBD_Start(&hUsbDeviceFS);
+
+}
+/**
+  * @}
   */
-/* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef __MAIN_H
-#define __MAIN_H
-  /* Includes ------------------------------------------------------------------*/
-
-/* USER CODE BEGIN Includes */
-
-/* USER CODE END Includes */
-
-/* Private define ------------------------------------------------------------*/
-
-#define N_PGOOD_Pin GPIO_PIN_13
-#define N_PGOOD_GPIO_Port GPIOC
-#define BT1_Pin GPIO_PIN_0
-#define BT1_GPIO_Port GPIOA
-#define BT2_Pin GPIO_PIN_1
-#define BT2_GPIO_Port GPIOA
-#define BT3_Pin GPIO_PIN_2
-#define BT3_GPIO_Port GPIOA
-#define LED_ISET_Pin GPIO_PIN_4
-#define LED_ISET_GPIO_Port GPIOA
-#define CHG_LIMIT_Pin GPIO_PIN_4
-#define CHG_LIMIT_GPIO_Port GPIOC
-#define N_CHARGING_Pin GPIO_PIN_5
-#define N_CHARGING_GPIO_Port GPIOC
-#define GPIO0_Pin GPIO_PIN_0
-#define GPIO0_GPIO_Port GPIOB
-#define GPIO1_Pin GPIO_PIN_1
-#define GPIO1_GPIO_Port GPIOB
-#define MEM_CS_Pin GPIO_PIN_12
-#define MEM_CS_GPIO_Port GPIOB
-#define MEM_SCK_Pin GPIO_PIN_13
-#define MEM_SCK_GPIO_Port GPIOB
-#define MEM_SO_Pin GPIO_PIN_14
-#define MEM_SO_GPIO_Port GPIOB
-#define MEM_SI_Pin GPIO_PIN_15
-#define MEM_SI_GPIO_Port GPIOB
-#define EN_BOOST_Pin GPIO_PIN_15
-#define EN_BOOST_GPIO_Port GPIOA
-#define LCD_SCK_Pin GPIO_PIN_10
-#define LCD_SCK_GPIO_Port GPIOC
-#define LCD_SI_Pin GPIO_PIN_12
-#define LCD_SI_GPIO_Port GPIOC
-#define LCD_CS_Pin GPIO_PIN_2
-#define LCD_CS_GPIO_Port GPIOD
-#define LCD_EXTMODE_Pin GPIO_PIN_3
-#define LCD_EXTMODE_GPIO_Port GPIOB
-#define LCD_DISP_Pin GPIO_PIN_4
-#define LCD_DISP_GPIO_Port GPIOB
-#define LCD_EXTCOM_Pin GPIO_PIN_5
-#define LCD_EXTCOM_GPIO_Port GPIOB
-#define LED_PWR_Pin GPIO_PIN_8
-#define LED_PWR_GPIO_Port GPIOB
-/* USER CODE BEGIN Private defines */
-
-/* USER CODE END Private defines */
 
 /**
   * @}
-  */ 
+  */
 
-/**
-  * @}
-*/ 
-
-#endif /* __MAIN_H */
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

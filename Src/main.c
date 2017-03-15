@@ -4,37 +4,49 @@
   * Description        : Main program body
   ******************************************************************************
   *
-  * COPYRIGHT(c) 2017 STMicroelectronics
+  * Copyright (c) 2017 STMicroelectronics International N.V. 
+  * All rights reserved.
   *
-  * Redistribution and use in source and binary forms, with or without modification,
-  * are permitted provided that the following conditions are met:
-  *   1. Redistributions of source code must retain the above copyright notice,
-  *      this list of conditions and the following disclaimer.
-  *   2. Redistributions in binary form must reproduce the above copyright notice,
-  *      this list of conditions and the following disclaimer in the documentation
-  *      and/or other materials provided with the distribution.
-  *   3. Neither the name of STMicroelectronics nor the names of its contributors
-  *      may be used to endorse or promote products derived from this software
-  *      without specific prior written permission.
+  * Redistribution and use in source and binary forms, with or without 
+  * modification, are permitted, provided that the following conditions are met:
   *
-  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-  * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-  * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-  * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-  * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * 1. Redistribution of source code must retain the above copyright notice, 
+  *    this list of conditions and the following disclaimer.
+  * 2. Redistributions in binary form must reproduce the above copyright notice,
+  *    this list of conditions and the following disclaimer in the documentation
+  *    and/or other materials provided with the distribution.
+  * 3. Neither the name of STMicroelectronics nor the names of other 
+  *    contributors to this software may be used to endorse or promote products 
+  *    derived from this software without specific written permission.
+  * 4. This software, including modifications and/or derivative works of this 
+  *    software, must execute solely and exclusively on microcontroller or
+  *    microprocessor devices manufactured by or for STMicroelectronics.
+  * 5. Redistribution and use of this software other than as permitted under 
+  *    this license is void and will automatically terminate your rights under 
+  *    this license. 
+  *
+  * THIS SOFTWARE IS PROVIDED BY STMICROELECTRONICS AND CONTRIBUTORS "AS IS" 
+  * AND ANY EXPRESS, IMPLIED OR STATUTORY WARRANTIES, INCLUDING, BUT NOT 
+  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
+  * PARTICULAR PURPOSE AND NON-INFRINGEMENT OF THIRD PARTY INTELLECTUAL PROPERTY
+  * RIGHTS ARE DISCLAIMED TO THE FULLEST EXTENT PERMITTED BY LAW. IN NO EVENT 
+  * SHALL STMICROELECTRONICS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+  * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, 
+  * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF 
+  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING 
+  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   *
   ******************************************************************************
   */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32l1xx_hal.h"
+#include "usb_device.h"
 
 /* USER CODE BEGIN Includes */
+#include "usbd_cdc_if.h"
 #include "memlcd.h"
 /* USER CODE END Includes */
 
@@ -51,16 +63,12 @@ SPI_HandleTypeDef hspi3;
 
 TIM_HandleTypeDef htim3;
 
-PCD_HandleTypeDef hpcd_USB_FS;
-
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 
 static const uint16_t brightable[256] = {
 		0, 0, 0, 0, 1, 1, 2, 3, 4, 5, 6, 7, 9, 10, 12, 14, 16, 18, 20, 22, 25, 27, 30, 33, 36, 39, 42, 45, 49, 52, 56, 60, 64, 68, 72, 76, 81, 85, 90, 95, 100, 105, 110, 115, 121, 126, 132, 138, 144, 150, 156, 162, 169, 175, 182, 189, 196, 203, 210, 217, 225, 232, 240, 248, 256, 264, 272, 280, 289, 297, 306, 315, 324, 333, 342, 351, 361, 370, 380, 390, 400, 410, 420, 430, 441, 451, 462, 473, 484, 495, 506, 517, 529, 540, 552, 564, 576, 588, 600, 612, 625, 637, 650, 663, 676, 689, 702, 715, 729, 742, 756, 770, 784, 798, 812, 826, 841, 855, 870, 885, 900, 915, 930, 945, 961, 976, 992, 1008, 1024, 1040, 1056, 1072, 1089, 1105, 1122, 1139, 1156, 1173, 1190, 1207, 1225, 1242, 1260, 1278, 1296, 1314, 1332, 1350, 1369, 1387, 1406, 1425, 1444, 1463, 1482, 1501, 1521, 1540, 1560, 1580, 1600, 1620, 1640, 1660, 1681, 1701, 1722, 1743, 1764, 1785, 1806, 1827, 1849, 1870, 1892, 1914, 1936, 1958, 1980, 2002, 2025, 2047, 2070, 2093, 2116, 2139, 2162, 2185, 2209, 2232, 2256, 2280, 2304, 2328, 2352, 2376, 2401, 2425, 2450, 2475, 2500, 2525, 2550, 2575, 2601, 2626, 2652, 2678, 2704, 2730, 2756, 2782, 2809, 2835, 2862, 2889, 2916, 2943, 2970, 2997, 3025, 3052, 3080, 3108, 3136, 3164, 3192, 3220, 3249, 3277, 3306, 3335, 3364, 3393, 3422, 3451, 3481, 3510, 3540, 3570, 3600, 3630, 3660, 3690, 3721, 3751, 3782, 3813, 3844, 3875, 3906, 3937, 3969, 4000, 4032, 4064
 };
-
-static uint8_t linebuf[52], row, col;
 
 MEMLCD_HandleTypeDef hmemlcd = {
     .model = MEMLCD_SHARP_270,
@@ -89,7 +97,6 @@ static void MX_RTC_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_SPI2_Init(void);
 static void MX_SPI3_Init(void);
-static void MX_USB_PCD_Init(void);
 static void MX_TIM3_Init(void);
 
 void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
@@ -97,6 +104,54 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
+
+void EXTFLASH_read_screen(uint8_t index, uint16_t stride, void *buffer, uint16_t bufsize) {
+	uint32_t addr = index*stride;
+	uint8_t cmd[] =  {0x03, addr>>16, (addr>>8)&0xff, (addr)&0xff};
+	HAL_GPIO_WritePin(MEM_CS_GPIO_Port, MEM_CS_Pin, 0);
+	HAL_SPI_Transmit(&hspi2, (void*)cmd, 4, 10);
+	HAL_SPI_Receive(&hspi2, buffer, bufsize, 100);
+	HAL_GPIO_WritePin(MEM_CS_GPIO_Port, MEM_CS_Pin, 1);
+}
+
+
+void EXTFLASH_write_enable() {
+	uint8_t cmd[] =  {0x06};
+	HAL_GPIO_WritePin(MEM_CS_GPIO_Port, MEM_CS_Pin, 0);
+	HAL_SPI_Transmit(&hspi2, (void*)cmd, 1, 10);
+	HAL_GPIO_WritePin(MEM_CS_GPIO_Port, MEM_CS_Pin, 1);
+}
+
+void EXTFLASH_wait_for_busy() {
+	uint8_t cmd = 0x05, status;
+	do {
+		HAL_GPIO_WritePin(MEM_CS_GPIO_Port, MEM_CS_Pin, 0);
+		HAL_SPI_Transmit(&hspi2, (void*)&cmd, 1, 10);
+		HAL_SPI_Receive(&hspi2, (void*)&status, 1, 10);
+		HAL_GPIO_WritePin(MEM_CS_GPIO_Port, MEM_CS_Pin, 1);
+	} while (status & 1);
+}
+
+void EXTFLASH_write_aligned_page(uint32_t addr, void *buffer, uint16_t size) {
+	EXTFLASH_write_enable();
+	uint8_t cmd[] =  {0x02, addr>>16, (addr>>8)&0xff, 0};
+	HAL_GPIO_WritePin(MEM_CS_GPIO_Port, MEM_CS_Pin, 0);
+	HAL_SPI_Transmit(&hspi2, (void*)cmd, 4, 10);
+	HAL_SPI_Transmit(&hspi2, buffer, size, 100);
+	HAL_GPIO_WritePin(MEM_CS_GPIO_Port, MEM_CS_Pin, 1);
+	EXTFLASH_wait_for_busy();
+}
+
+void EXTFLASH_write_screen(uint8_t index, uint16_t stride, void *buffer, uint16_t bufsize) {
+	uint32_t addr = index*stride;
+	while(bufsize > 256) {
+		EXTFLASH_write_aligned_page(addr, buffer, 256);
+		buffer += 256;
+		addr += 256;
+		bufsize -= 256;
+	}
+	EXTFLASH_write_aligned_page(addr, buffer, bufsize);
+}
 
 /* USER CODE END PFP */
 
@@ -127,23 +182,30 @@ int main(void)
   MX_SPI1_Init();
   MX_SPI2_Init();
   MX_SPI3_Init();
-  MX_USB_PCD_Init();
   MX_TIM3_Init();
+  MX_USB_DEVICE_Init();
 
   /* USER CODE BEGIN 2 */
-  HAL_GPIO_WritePin(LED_PWR_GPIO_Port, LED_PWR_Pin, 1); // Turn on LED
+  MEMLCD_init(&hmemlcd);
+  MEMLCD_set_disp(&hmemlcd, 0);
+
+  while (HAL_GPIO_ReadPin(BT1_GPIO_Port, BT1_Pin)) HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_SLEEPENTRY_WFI);
+  SystemClock_Config();
+  HAL_GPIO_WritePin(LED_PWR_GPIO_Port, LED_PWR_Pin, 0); // Turn on LED
   HAL_GPIO_WritePin(EN_BOOST_GPIO_Port, EN_BOOST_Pin, 1); // Turn on boost PSU
   HAL_DAC_Start(&hdac, DAC1_CHANNEL_1);
-  MEMLCD_init(&hmemlcd);
   MEMLCD_set_disp(&hmemlcd, 1);
   MEMLCD_clear_all(&hmemlcd);
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
   TIM3->CCR2 = 6000;
   for (int y=0; y<240; y++) {
 	  for(int x=0; x<50; x++) {
-		  screenbuf[y][x] = ((y&15) >= 2) ? (x&1? 0b00111111 : 0xff): 0b00000000;
+		  //screenbuf[y][x] = ((y&15) >= 2) ? (x&1? 0b00111111 : 0xff): 0b00000000;
 	  }
   }
+  //EXTFLASH_write_screen(0, 12*1024, (void*)screenbuf, sizeof(screenbuf));
+
+  EXTFLASH_read_screen(0, 12*1024, (void*)screenbuf, sizeof(screenbuf));
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -153,9 +215,9 @@ int main(void)
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-	  HAL_DAC_SetValue(&hdac, DAC1_CHANNEL_1, DAC_ALIGN_12B_R, 2048);
+	  HAL_DAC_SetValue(&hdac, DAC1_CHANNEL_1, DAC_ALIGN_12B_R, 2730/4);
 	  MEMLCD_update_area(&hmemlcd, &screenbuf[0][0], 0, 240);
-	  //screenbuf[120][30] = scon;
+
   }
   /* USER CODE END 3 */
 
@@ -404,24 +466,6 @@ static void MX_TIM3_Init(void)
 
 }
 
-/* USB init function */
-static void MX_USB_PCD_Init(void)
-{
-
-  hpcd_USB_FS.Instance = USB;
-  hpcd_USB_FS.Init.dev_endpoints = 8;
-  hpcd_USB_FS.Init.speed = PCD_SPEED_FULL;
-  hpcd_USB_FS.Init.ep0_mps = DEP0CTL_MPS_8;
-  hpcd_USB_FS.Init.phy_itface = PCD_PHY_EMBEDDED;
-  hpcd_USB_FS.Init.low_power_enable = DISABLE;
-  hpcd_USB_FS.Init.battery_charging_enable = DISABLE;
-  if (HAL_PCD_Init(&hpcd_USB_FS) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-}
-
 /** Configure pins as 
         * Analog 
         * Input 
@@ -447,13 +491,22 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(CHG_LIMIT_GPIO_Port, CHG_LIMIT_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, MEM_CS_Pin|LCD_EXTMODE_Pin|LCD_DISP_Pin|LED_PWR_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(MEM_CS_GPIO_Port, MEM_CS_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(EN_BOOST_GPIO_Port, EN_BOOST_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LCD_CS_GPIO_Port, LCD_CS_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOB, LCD_EXTMODE_Pin|LCD_DISP_Pin|LED_PWR_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin : BT1_Pin */
+  GPIO_InitStruct.Pin = BT1_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(BT1_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : BT2_Pin BT3_Pin */
   GPIO_InitStruct.Pin = BT2_Pin|BT3_Pin;
@@ -480,12 +533,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : MEM_CS_Pin LCD_EXTMODE_Pin LCD_DISP_Pin LED_PWR_Pin */
-  GPIO_InitStruct.Pin = MEM_CS_Pin|LCD_EXTMODE_Pin|LCD_DISP_Pin|LED_PWR_Pin;
+  /*Configure GPIO pin : MEM_CS_Pin */
+  GPIO_InitStruct.Pin = MEM_CS_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(MEM_CS_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : EN_BOOST_Pin */
   GPIO_InitStruct.Pin = EN_BOOST_Pin;
@@ -498,8 +551,15 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pin = LCD_CS_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(LCD_CS_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : LCD_EXTMODE_Pin LCD_DISP_Pin LED_PWR_Pin */
+  GPIO_InitStruct.Pin = LCD_EXTMODE_Pin|LCD_DISP_Pin|LED_PWR_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PB6 PB7 */
   GPIO_InitStruct.Pin = GPIO_PIN_6|GPIO_PIN_7;
@@ -508,6 +568,10 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
   GPIO_InitStruct.Alternate = GPIO_AF7_USART1;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI0_IRQn);
 
 }
 
