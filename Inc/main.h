@@ -77,6 +77,10 @@
 #define MEM_SO_GPIO_Port GPIOB
 #define MEM_SI_Pin GPIO_PIN_15
 #define MEM_SI_GPIO_Port GPIOB
+#define DBGPIN0_Pin GPIO_PIN_9
+#define DBGPIN0_GPIO_Port GPIOA
+#define DBGPIN1_Pin GPIO_PIN_10
+#define DBGPIN1_GPIO_Port GPIOA
 #define EN_BOOST_Pin GPIO_PIN_15
 #define EN_BOOST_GPIO_Port GPIOA
 #define LCD_SCK_Pin GPIO_PIN_10

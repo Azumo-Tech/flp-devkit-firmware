@@ -105,6 +105,22 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
 
+void EXTFLASH_power_down() {
+	uint8_t cmd[] =  {0xB9};
+	HAL_GPIO_WritePin(MEM_CS_GPIO_Port, MEM_CS_Pin, 0);
+	HAL_SPI_Transmit(&hspi2, (void*)cmd, 1, 10);
+	HAL_GPIO_WritePin(MEM_CS_GPIO_Port, MEM_CS_Pin, 1);
+	for (volatile int i=0; i<200; i++);
+}
+
+void EXTFLASH_power_up() {
+	uint8_t cmd[] =  {0xAB};
+	HAL_GPIO_WritePin(MEM_CS_GPIO_Port, MEM_CS_Pin, 0);
+	HAL_SPI_Transmit(&hspi2, (void*)cmd, 1, 10);
+	HAL_GPIO_WritePin(MEM_CS_GPIO_Port, MEM_CS_Pin, 1);
+	for (volatile int i=0; i<200; i++);
+}
+
 void EXTFLASH_read_screen(uint8_t index, uint16_t stride, void *buffer, uint16_t bufsize) {
 	uint32_t addr = index*stride;
 	uint8_t cmd[] =  {0x03, addr>>16, (addr>>8)&0xff, (addr)&0xff};
@@ -153,9 +169,89 @@ void EXTFLASH_write_screen(uint8_t index, uint16_t stride, void *buffer, uint16_
 	EXTFLASH_write_aligned_page(addr, buffer, bufsize);
 }
 
+void SystemClock_Config_SLOW(void)
+{
+
+  RCC_OscInitTypeDef RCC_OscInitStruct;
+  RCC_ClkInitTypeDef RCC_ClkInitStruct;
+  RCC_PeriphCLKInitTypeDef PeriphClkInit;
+
+    /**Configure the main internal regulator output voltage
+    */
+  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
+
+    /**Initializes the CPU, AHB and APB busses clocks
+    */
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSE
+                              |RCC_OSCILLATORTYPE_MSI;
+  RCC_OscInitStruct.LSEState = RCC_LSE_ON;
+  RCC_OscInitStruct.MSIState = RCC_MSI_ON;
+  RCC_OscInitStruct.MSICalibrationValue = 0;
+  RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_0;
+  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+    /**Initializes the CPU, AHB and APB busses clocks
+    */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_MSI;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_RTC;
+  PeriphClkInit.RTCClockSelection = RCC_RTCCLKSOURCE_LSE;
+  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+    /**Configure the Systick interrupt time
+    */
+  //HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq()/1000);
+
+    /**Configure the Systick
+    */
+  //HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
+
+  /* SysTick_IRQn interrupt configuration */
+  //HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
+
+  SysTick->CTRL = 0;//SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_ENABLE_Msk;
+}
+
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
+
+void SleepyTime() {
+	HAL_GPIO_WritePin(LED_PWR_GPIO_Port, LED_PWR_Pin, 0); // Turn off LED
+	HAL_DAC_Stop(&hdac, DAC_CHANNEL_1); // Stop LED DAC
+	HAL_GPIO_WritePin(EN_BOOST_GPIO_Port, EN_BOOST_Pin, 0); // Turn off boost PSU
+	MEMLCD_set_disp(&hmemlcd, 0);
+	EXTFLASH_power_down();
+	USBD_Stop(&hUsbDeviceFS);
+	USBD_DeInit(&hUsbDeviceFS);
+	SysTick->CTRL = 0;
+	SystemClock_Config_SLOW();
+	while (!HAL_GPIO_ReadPin(BT1_GPIO_Port, BT1_Pin));
+	while (HAL_GPIO_ReadPin(BT1_GPIO_Port, BT1_Pin) && HAL_GPIO_ReadPin(N_PGOOD_GPIO_Port, N_PGOOD_Pin)) {
+		HAL_GPIO_WritePin(DBGPIN0_GPIO_Port, DBGPIN0_Pin, 1);
+		HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_SLEEPENTRY_WFI);
+		HAL_GPIO_WritePin(DBGPIN0_GPIO_Port, DBGPIN0_Pin, 0);
+	}
+	SystemClock_Config();
+	MX_USB_DEVICE_Init();
+	EXTFLASH_power_up();
+}
 
 /* USER CODE END 0 */
 
@@ -163,7 +259,8 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
+	uint8_t dirty;
+	uint8_t bt1_tim=0, bt2_tim=0, bt3_tim=0;
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -187,11 +284,7 @@ int main(void)
 
   /* USER CODE BEGIN 2 */
   MEMLCD_init(&hmemlcd);
-  MEMLCD_set_disp(&hmemlcd, 0);
-
-  while (HAL_GPIO_ReadPin(BT1_GPIO_Port, BT1_Pin)) HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_SLEEPENTRY_WFI);
-  SystemClock_Config();
-  HAL_GPIO_WritePin(LED_PWR_GPIO_Port, LED_PWR_Pin, 0); // Turn on LED
+  SleepyTime();
   HAL_GPIO_WritePin(EN_BOOST_GPIO_Port, EN_BOOST_Pin, 1); // Turn on boost PSU
   HAL_DAC_Start(&hdac, DAC1_CHANNEL_1);
   MEMLCD_set_disp(&hmemlcd, 1);
@@ -204,20 +297,44 @@ int main(void)
 	  }
   }
   //EXTFLASH_write_screen(0, 12*1024, (void*)screenbuf, sizeof(screenbuf));
-
   EXTFLASH_read_screen(0, 12*1024, (void*)screenbuf, sizeof(screenbuf));
+  dirty = 1;
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  uint32_t looptime = HAL_GetTick();
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-	  HAL_DAC_SetValue(&hdac, DAC1_CHANNEL_1, DAC_ALIGN_12B_R, 2730/4);
-	  MEMLCD_update_area(&hmemlcd, &screenbuf[0][0], 0, 240);
+	  HAL_DAC_SetValue(&hdac, DAC1_CHANNEL_1, DAC_ALIGN_12B_R, 2730);
+	  if (dirty){
+		  MEMLCD_update_area(&hmemlcd, &screenbuf[0][0], 0, 240);
+		  dirty = 0;
+	  }
+	  if (!HAL_GPIO_ReadPin(BT1_GPIO_Port, BT1_Pin)) {
+		  if (bt1_tim < 250) bt1_tim++;
+		  if (bt1_tim == 100) {
+			  bt1_tim = 250;
+			  SleepyTime();
+			  //HAL_GPIO_WritePin(LED_PWR_GPIO_Port, LED_PWR_Pin, 1); // Turn on LED
+			  HAL_GPIO_WritePin(EN_BOOST_GPIO_Port, EN_BOOST_Pin, 1); // Turn on boost PSU
+			  HAL_DAC_Start(&hdac, DAC1_CHANNEL_1);
+			  MEMLCD_set_disp(&hmemlcd, 1);
+		 }
+	  } else {
+		  bt1_tim = 0;
+	  }
+	  if (!HAL_GPIO_ReadPin(BT2_GPIO_Port, BT2_Pin)) {
+		  if (bt2_tim < 250) bt2_tim++;
+	  } else {
+		  if (bt2_tim > 5) HAL_GPIO_TogglePin(LED_PWR_GPIO_Port, LED_PWR_Pin);
+		  bt2_tim = 0;
+	  }
 
+	  while (HAL_GetTick() - looptime < 20); // Cycle time = 20ms
   }
   /* USER CODE END 3 */
 
@@ -472,6 +589,8 @@ static void MX_TIM3_Init(void)
         * Output
         * EVENT_OUT
         * EXTI
+        * Free pins are configured automatically as Analog (this feature is enabled through 
+        * the Code Generation settings)
      PB6   ------> USART1_TX
      PB7   ------> USART1_RX
 */
@@ -494,13 +613,29 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(MEM_CS_GPIO_Port, MEM_CS_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(EN_BOOST_GPIO_Port, EN_BOOST_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, DBGPIN0_Pin|DBGPIN1_Pin|EN_BOOST_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LCD_CS_GPIO_Port, LCD_CS_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, LCD_EXTMODE_Pin|LCD_DISP_Pin|LED_PWR_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pins : N_PGOOD_Pin N_CHARGING_Pin */
+  GPIO_InitStruct.Pin = N_PGOOD_Pin|N_CHARGING_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PC0 PC1 PC2 PC3 
+                           PC6 PC7 PC8 PC9 
+                           PC11 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3 
+                          |GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8|GPIO_PIN_9 
+                          |GPIO_PIN_11;
+  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pin : BT1_Pin */
   GPIO_InitStruct.Pin = BT1_Pin;
@@ -514,6 +649,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
+  /*Configure GPIO pins : PA3 PA8 */
+  GPIO_InitStruct.Pin = GPIO_PIN_3|GPIO_PIN_8;
+  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
   /*Configure GPIO pin : CHG_LIMIT_Pin */
   GPIO_InitStruct.Pin = CHG_LIMIT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -521,14 +662,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(CHG_LIMIT_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : N_CHARGING_Pin */
-  GPIO_InitStruct.Pin = N_CHARGING_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(N_CHARGING_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : GPIO0_Pin GPIO1_Pin */
-  GPIO_InitStruct.Pin = GPIO0_Pin|GPIO1_Pin;
+  /*Configure GPIO pins : GPIO0_Pin GPIO1_Pin PB2 PB9 */
+  GPIO_InitStruct.Pin = GPIO0_Pin|GPIO1_Pin|GPIO_PIN_2|GPIO_PIN_9;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
@@ -540,12 +675,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(MEM_CS_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : EN_BOOST_Pin */
-  GPIO_InitStruct.Pin = EN_BOOST_Pin;
+  /*Configure GPIO pins : DBGPIN0_Pin DBGPIN1_Pin EN_BOOST_Pin */
+  GPIO_InitStruct.Pin = DBGPIN0_Pin|DBGPIN1_Pin|EN_BOOST_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(EN_BOOST_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pin : LCD_CS_Pin */
   GPIO_InitStruct.Pin = LCD_CS_Pin;
