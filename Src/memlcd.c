@@ -4,10 +4,11 @@
 
 #include <stdint.h>
 
+volatile uint8_t MEMLCD_buffer[240*150];
 
 void MEMLCD_init(MEMLCD_HandleTypeDef *hmemlcd) {
 	HAL_GPIO_WritePin(hmemlcd->EXTMODE_Port, hmemlcd->EXTMODE_Pin, 1);
-	if (hmemlcd->model == MEMLCD_SHARP_270) {
+	if (hmemlcd->model == MEMLCD_LS027B7DH01) { /* Larger Sharp LCDs need 5v */
 		HAL_GPIO_WritePin(hmemlcd->BOOST_Port, hmemlcd->BOOST_Pin, 1);
 	}
 	MEMLCD_clear_all(hmemlcd);
@@ -39,9 +40,14 @@ void MEMLCD_set_disp(MEMLCD_HandleTypeDef *hmemlcd, uint8_t state) {
 	HAL_GPIO_WritePin(hmemlcd->DISP_Port, hmemlcd->DISP_Pin, state);
 }
 
-void MEMLCD_update_area(MEMLCD_HandleTypeDef *hmemlcd,
-		uint8_t *buffer, uint8_t start, uint8_t end) {
-	uint8_t cmd[2] = {0b001, start}, line_len = 50;
+void MEMLCD_update_area(MEMLCD_HandleTypeDef *hmemlcd, uint8_t start, uint8_t end) {
+	uint8_t cmd[2] = {0b001, 0};
+	uint8_t line_len = MEMLCD_line_length[hmemlcd->model];
+	uint8_t line_ct = MEMLCD_line_count[hmemlcd->model];
+	end = (end <= line_ct)? end : line_ct;
+	start = (start <= end)? start : end;
+	volatile uint8_t *buffer = hmemlcd->buffer + (line_len * start);
+	cmd[1] = start;
 	HAL_GPIO_WritePin(hmemlcd->CS_Port, hmemlcd->CS_Pin, 1);
 	while(cmd[1] <= end) {
 		HAL_SPI_Transmit(hmemlcd->hspi, cmd, 2, 10);

@@ -44,6 +44,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "usbd_cdc_if.h"
 /* USER CODE BEGIN INCLUDE */
+#include "memlcd.h"
 /* USER CODE END INCLUDE */
 
 /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
@@ -99,8 +100,8 @@ uint8_t UserRxBufferFS[APP_RX_DATA_SIZE];
 uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
 
 /* USER CODE BEGIN PRIVATE_VARIABLES */
-extern volatile uint8_t screenbuf[240][50];
-extern volatile uint8_t dirty;
+extern MEMLCD_HandleTypeDef hmemlcd;
+extern volatile uint8_t dirty, save_screen;
 volatile uint8_t *buf;
 volatile int16_t togo=0;
 /* USER CODE END PRIVATE_VARIABLES */
@@ -267,19 +268,19 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
   /* USER CODE BEGIN 6 */
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);
-  if (Buf[0] == 'L')
-	  HAL_GPIO_TogglePin(LED_PWR_GPIO_Port, LED_PWR_Pin);
-  if (*Len == 1 && Buf[0] == 'T') {
-	  HAL_GPIO_TogglePin(LED_PWR_GPIO_Port, LED_PWR_Pin);
-	  togo = sizeof(screenbuf);
-	  buf = &screenbuf[0][0];
-  }
   if (togo > 0) {
+  	  HAL_GPIO_TogglePin(LED_PWR_GPIO_Port, LED_PWR_Pin);
+  	  memcpy((void*)buf, (void*)Buf, *Len);
+  	  togo -= *Len;
+  	  buf += *Len;
+  	  dirty = 1;
+  } else if (*Len == 1 && Buf[0] == 'L') {
 	  HAL_GPIO_TogglePin(LED_PWR_GPIO_Port, LED_PWR_Pin);
-	  memcpy((void*)buf, (void*)Buf, *Len);
-	  togo -= *Len;
-	  buf += *Len;
-	  dirty = 1;
+  } else if (*Len == 1 && Buf[0] == 'W') {
+	  save_screen = 1;
+  } else if (*Len == 1 && Buf[0] == 'T') {
+	  togo = MEMLCD_bufsize(&hmemlcd);
+	  buf = hmemlcd.buffer;
   }
   return (USBD_OK);
   /* USER CODE END 6 */ 

@@ -48,6 +48,7 @@
 /* USER CODE BEGIN Includes */
 #include "usbd_cdc_if.h"
 #include "memlcd.h"
+#include "extflash.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -67,11 +68,30 @@ TIM_HandleTypeDef htim3;
 /* Private variables ---------------------------------------------------------*/
 
 static const uint16_t brightable[256] = {
-		0, 0, 0, 0, 1, 1, 2, 3, 4, 5, 6, 7, 9, 10, 12, 14, 16, 18, 20, 22, 25, 27, 30, 33, 36, 39, 42, 45, 49, 52, 56, 60, 64, 68, 72, 76, 81, 85, 90, 95, 100, 105, 110, 115, 121, 126, 132, 138, 144, 150, 156, 162, 169, 175, 182, 189, 196, 203, 210, 217, 225, 232, 240, 248, 256, 264, 272, 280, 289, 297, 306, 315, 324, 333, 342, 351, 361, 370, 380, 390, 400, 410, 420, 430, 441, 451, 462, 473, 484, 495, 506, 517, 529, 540, 552, 564, 576, 588, 600, 612, 625, 637, 650, 663, 676, 689, 702, 715, 729, 742, 756, 770, 784, 798, 812, 826, 841, 855, 870, 885, 900, 915, 930, 945, 961, 976, 992, 1008, 1024, 1040, 1056, 1072, 1089, 1105, 1122, 1139, 1156, 1173, 1190, 1207, 1225, 1242, 1260, 1278, 1296, 1314, 1332, 1350, 1369, 1387, 1406, 1425, 1444, 1463, 1482, 1501, 1521, 1540, 1560, 1580, 1600, 1620, 1640, 1660, 1681, 1701, 1722, 1743, 1764, 1785, 1806, 1827, 1849, 1870, 1892, 1914, 1936, 1958, 1980, 2002, 2025, 2047, 2070, 2093, 2116, 2139, 2162, 2185, 2209, 2232, 2256, 2280, 2304, 2328, 2352, 2376, 2401, 2425, 2450, 2475, 2500, 2525, 2550, 2575, 2601, 2626, 2652, 2678, 2704, 2730, 2756, 2782, 2809, 2835, 2862, 2889, 2916, 2943, 2970, 2997, 3025, 3052, 3080, 3108, 3136, 3164, 3192, 3220, 3249, 3277, 3306, 3335, 3364, 3393, 3422, 3451, 3481, 3510, 3540, 3570, 3600, 3630, 3660, 3690, 3721, 3751, 3782, 3813, 3844, 3875, 3906, 3937, 3969, 4000, 4032, 4064
+		0, 0, 0, 0, 1, 1, 2, 3, 4, 5, 6, 7, 9, 10, 12, 14, 16, 18, 20, 22, 25,
+		27, 30, 33, 36, 39, 42, 45, 49, 52, 56, 60, 64, 68, 72, 76, 81, 85, 90,
+		95, 100, 105, 110, 115, 121, 126, 132, 138, 144, 150, 156, 162, 169,
+		175, 182, 189, 196, 203, 210, 217, 225, 232, 240, 248, 256, 264, 272,
+		280, 289, 297, 306, 315, 324, 333, 342, 351, 361, 370, 380, 390, 400,
+		410, 420, 430, 441, 451, 462, 473, 484, 495, 506, 517, 529, 540, 552,
+		564, 576, 588, 600, 612, 625, 637, 650, 663, 676, 689, 702, 715, 729,
+		742, 756, 770, 784, 798, 812, 826, 841, 855, 870, 885, 900, 915, 930,
+		945, 961, 976, 992, 1008, 1024, 1040, 1056, 1072, 1089, 1105, 1122,
+		1139, 1156, 1173, 1190, 1207, 1225, 1242, 1260, 1278, 1296, 1314, 1332,
+		1350, 1369, 1387, 1406, 1425, 1444, 1463, 1482, 1501, 1521, 1540, 1560,
+		1580, 1600, 1620, 1640, 1660, 1681, 1701, 1722, 1743, 1764, 1785, 1806,
+		1827, 1849, 1870, 1892, 1914, 1936, 1958, 1980, 2002, 2025, 2047, 2070,
+		2093, 2116, 2139, 2162, 2185, 2209, 2232, 2256, 2280, 2304, 2328, 2352,
+		2376, 2401, 2425, 2450, 2475, 2500, 2525, 2550, 2575, 2601, 2626, 2652,
+		2678, 2704, 2730, 2756, 2782, 2809, 2835, 2862, 2889, 2916, 2943, 2970,
+		2997, 3025, 3052, 3080, 3108, 3136, 3164, 3192, 3220, 3249, 3277, 3306,
+		3335, 3364, 3393, 3422, 3451, 3481, 3510, 3540, 3570, 3600, 3630, 3660,
+		3690, 3721, 3751, 3782, 3813, 3844, 3875, 3906, 3937, 3969, 4000, 4032,
+		4064
 };
 
 MEMLCD_HandleTypeDef hmemlcd = {
-    .model = MEMLCD_SHARP_270,
+    .model = MEMLCD_LS027B7DH01,
 	.hspi = &hspi3,
 	.CS_Port = LCD_CS_GPIO_Port,
 	.CS_Pin = LCD_CS_Pin,
@@ -85,8 +105,15 @@ MEMLCD_HandleTypeDef hmemlcd = {
 	.BOOST_Pin = EN_BOOST_Pin,
 };
 
-volatile uint8_t screenbuf[240][50];
-volatile uint8_t dirty, cur_idx;
+EXTFLASH_HandleTypeDef hflash = {
+	.hspi = &hspi2,
+	.CS_Port = MEM_CS_GPIO_Port,
+	.CS_Pin = MEM_CS_Pin,
+	.size = 2*1024*1024,
+	.stride = 12*1024
+};
+
+volatile uint8_t dirty, cur_idx, save_screen, running, runticks;
 
 /* USER CODE END PV */
 
@@ -107,70 +134,6 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
-
-void EXTFLASH_power_down() {
-	uint8_t cmd[] =  {0xB9};
-	HAL_GPIO_WritePin(MEM_CS_GPIO_Port, MEM_CS_Pin, 0);
-	HAL_SPI_Transmit(&hspi2, (void*)cmd, 1, 10);
-	HAL_GPIO_WritePin(MEM_CS_GPIO_Port, MEM_CS_Pin, 1);
-	for (volatile int i=0; i<200; i++);
-}
-
-void EXTFLASH_power_up() {
-	uint8_t cmd[] =  {0xAB};
-	HAL_GPIO_WritePin(MEM_CS_GPIO_Port, MEM_CS_Pin, 0);
-	HAL_SPI_Transmit(&hspi2, (void*)cmd, 1, 10);
-	HAL_GPIO_WritePin(MEM_CS_GPIO_Port, MEM_CS_Pin, 1);
-	for (volatile int i=0; i<200; i++);
-}
-
-void EXTFLASH_read_screen(uint8_t index, uint16_t stride, void *buffer, uint16_t bufsize) {
-	uint32_t addr = index*stride;
-	uint8_t cmd[] =  {0x03, addr>>16, (addr>>8)&0xff, (addr)&0xff};
-	HAL_GPIO_WritePin(MEM_CS_GPIO_Port, MEM_CS_Pin, 0);
-	HAL_SPI_Transmit(&hspi2, (void*)cmd, 4, 10);
-	HAL_SPI_Receive(&hspi2, buffer, bufsize, 100);
-	HAL_GPIO_WritePin(MEM_CS_GPIO_Port, MEM_CS_Pin, 1);
-}
-
-
-void EXTFLASH_write_enable() {
-	uint8_t cmd[] =  {0x06};
-	HAL_GPIO_WritePin(MEM_CS_GPIO_Port, MEM_CS_Pin, 0);
-	HAL_SPI_Transmit(&hspi2, (void*)cmd, 1, 10);
-	HAL_GPIO_WritePin(MEM_CS_GPIO_Port, MEM_CS_Pin, 1);
-}
-
-void EXTFLASH_wait_for_busy() {
-	uint8_t cmd = 0x05, status;
-	do {
-		HAL_GPIO_WritePin(MEM_CS_GPIO_Port, MEM_CS_Pin, 0);
-		HAL_SPI_Transmit(&hspi2, (void*)&cmd, 1, 10);
-		HAL_SPI_Receive(&hspi2, (void*)&status, 1, 10);
-		HAL_GPIO_WritePin(MEM_CS_GPIO_Port, MEM_CS_Pin, 1);
-	} while (status & 1);
-}
-
-void EXTFLASH_write_aligned_page(uint32_t addr, void *buffer, uint16_t size) {
-	EXTFLASH_write_enable();
-	uint8_t cmd[] =  {0x02, addr>>16, (addr>>8)&0xff, 0};
-	HAL_GPIO_WritePin(MEM_CS_GPIO_Port, MEM_CS_Pin, 0);
-	HAL_SPI_Transmit(&hspi2, (void*)cmd, 4, 10);
-	HAL_SPI_Transmit(&hspi2, buffer, size, 100);
-	HAL_GPIO_WritePin(MEM_CS_GPIO_Port, MEM_CS_Pin, 1);
-	EXTFLASH_wait_for_busy();
-}
-
-void EXTFLASH_write_screen(uint8_t index, uint16_t stride, void *buffer, uint16_t bufsize) {
-	uint32_t addr = index*stride;
-	while(bufsize > 256) {
-		EXTFLASH_write_aligned_page(addr, buffer, 256);
-		buffer += 256;
-		addr += 256;
-		bufsize -= 256;
-	}
-	EXTFLASH_write_aligned_page(addr, buffer, bufsize);
-}
 
 void SystemClock_Config_SLOW(void)
 {
@@ -240,7 +203,7 @@ void SleepyTime() {
 	HAL_GPIO_WritePin(LED_PWR_GPIO_Port, LED_PWR_Pin, 0); // Turn off LED
 	HAL_DAC_Stop(&hdac, DAC_CHANNEL_1); // Stop LED DAC
 	MEMLCD_power_off(&hmemlcd);
-	EXTFLASH_power_down();
+	EXTFLASH_power_down(&hflash);
 	USBD_Stop(&hUsbDeviceFS);
 	USBD_DeInit(&hUsbDeviceFS);
 	SysTick->CTRL = 0;
@@ -253,7 +216,7 @@ void SleepyTime() {
 	}
 	SystemClock_Config();
 	MX_USB_DEVICE_Init();
-	EXTFLASH_power_up();
+	EXTFLASH_power_up(&hflash);
 	HAL_DAC_Start(&hdac, DAC_CHANNEL_1);
 	MEMLCD_init(&hmemlcd);
 	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
@@ -291,14 +254,12 @@ int main(void)
   /* USER CODE BEGIN 2 */
   MEMLCD_init(&hmemlcd);
   SleepyTime();
-  for (int y=0; y<240; y++) {
-	  for(int x=0; x<50; x++) {
-		  //screenbuf[y][x] = ((y&15) >= 2) ? (x&1? 0b00111111 : 0xff): 0b00000000;
-	  }
-  }
-  //EXTFLASH_write_screen(0, 12*1024, (void*)screenbuf, sizeof(screenbuf));
-  EXTFLASH_read_screen(0, 12*1024, (void*)screenbuf, sizeof(screenbuf));
+  cur_idx = 0;
+  EXTFLASH_read_screen(&hflash, cur_idx, (void*)hmemlcd.buffer, MEMLCD_bufsize(&hmemlcd));
   dirty = 1;
+  save_screen = 0;
+  running = 1;
+  runticks = 250;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -309,16 +270,24 @@ int main(void)
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-	  HAL_DAC_SetValue(&hdac, DAC1_CHANNEL_1, DAC_ALIGN_12B_R, 2730/4);
+	  HAL_DAC_SetValue(&hdac, DAC1_CHANNEL_1, DAC_ALIGN_12B_R, 2730);
 	  if (dirty){
-		  MEMLCD_update_area(&hmemlcd, &screenbuf[0][0], 0, 240);
+		  MEMLCD_update_area(&hmemlcd, 1, -1);
 		  dirty = 0;
+	  }
+	  if (save_screen) {
+		  EXTFLASH_write_screen(&hflash, cur_idx, (void*)hmemlcd.buffer, MEMLCD_bufsize(&hmemlcd));
+		  save_screen = 0;
 	  }
 	  if (!HAL_GPIO_ReadPin(BT1_GPIO_Port, BT1_Pin)) {
 		  if (bt1_tim < 250) bt1_tim++;
 		  if (bt1_tim == 100) {
 			  bt1_tim = 250;
 			  SleepyTime();
+			  cur_idx = 0;
+			  EXTFLASH_read_screen(&hflash, cur_idx, (void*)hmemlcd.buffer, MEMLCD_bufsize(&hmemlcd));
+			  running = 1;
+			  runticks = 250;
 			  dirty = 1;
 		 }
 	  } else {
@@ -331,6 +300,26 @@ int main(void)
 		  bt2_tim = 0;
 	  }
 
+	  if (!HAL_GPIO_ReadPin(BT3_GPIO_Port, BT3_Pin)) {
+		  if (bt3_tim < 250) bt3_tim++;
+		  if (bt3_tim == 100) {
+			  running = 1;
+			  runticks = 0;
+		  }
+	  } else {
+		  if (bt3_tim > 5 && bt3_tim < 100) {
+			  running = 0;
+			  runticks = 0;
+		  }
+		  bt3_tim = 0;
+	  }
+	  if (!runticks) {
+		  runticks = 150;
+		  cur_idx = (cur_idx+1) % 6;
+		  EXTFLASH_read_screen(&hflash, cur_idx, (void*)hmemlcd.buffer, MEMLCD_bufsize(&hmemlcd));
+		  dirty = 1;
+	  }
+	  if (running) runticks--;
 	  while (HAL_GetTick() - looptime < 20); // Cycle time = 20ms
   }
   /* USER CODE END 3 */
