@@ -70,8 +70,8 @@
 /* USER CODE BEGIN PRIVATE_DEFINES */
 /* Define size for the receive and transmit buffer over CDC */
 /* It's up to user to redefine and/or remove those define */
-#define APP_RX_DATA_SIZE  4
-#define APP_TX_DATA_SIZE  4
+#define APP_RX_DATA_SIZE  64
+#define APP_TX_DATA_SIZE  64
 /* USER CODE END PRIVATE_DEFINES */
 /**
   * @}
@@ -99,6 +99,10 @@ uint8_t UserRxBufferFS[APP_RX_DATA_SIZE];
 uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
 
 /* USER CODE BEGIN PRIVATE_VARIABLES */
+extern volatile uint8_t screenbuf[240][50];
+extern volatile uint8_t dirty;
+volatile uint8_t *buf;
+volatile int16_t togo=0;
 /* USER CODE END PRIVATE_VARIABLES */
 
 /**
@@ -265,6 +269,18 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);
   if (Buf[0] == 'L')
 	  HAL_GPIO_TogglePin(LED_PWR_GPIO_Port, LED_PWR_Pin);
+  if (*Len == 1 && Buf[0] == 'T') {
+	  HAL_GPIO_TogglePin(LED_PWR_GPIO_Port, LED_PWR_Pin);
+	  togo = sizeof(screenbuf);
+	  buf = &screenbuf[0][0];
+  }
+  if (togo > 0) {
+	  HAL_GPIO_TogglePin(LED_PWR_GPIO_Port, LED_PWR_Pin);
+	  memcpy((void*)buf, (void*)Buf, *Len);
+	  togo -= *Len;
+	  buf += *Len;
+	  dirty = 1;
+  }
   return (USBD_OK);
   /* USER CODE END 6 */ 
 }

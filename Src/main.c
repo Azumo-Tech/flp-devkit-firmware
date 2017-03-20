@@ -81,9 +81,12 @@ MEMLCD_HandleTypeDef hmemlcd = {
 	.EXTMODE_Pin = LCD_EXTMODE_Pin,
 	.EXTCOM_Port = LCD_EXTCOM_GPIO_Port,
 	.EXTCOM_Pin = LCD_EXTCOM_Pin,
+	.BOOST_Port = EN_BOOST_GPIO_Port,
+	.BOOST_Pin = EN_BOOST_Pin,
 };
 
-uint8_t screenbuf[240][50];
+volatile uint8_t screenbuf[240][50];
+volatile uint8_t dirty, cur_idx;
 
 /* USER CODE END PV */
 
@@ -233,10 +236,10 @@ void SystemClock_Config_SLOW(void)
 /* USER CODE BEGIN 0 */
 
 void SleepyTime() {
+	HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_2);
 	HAL_GPIO_WritePin(LED_PWR_GPIO_Port, LED_PWR_Pin, 0); // Turn off LED
 	HAL_DAC_Stop(&hdac, DAC_CHANNEL_1); // Stop LED DAC
-	HAL_GPIO_WritePin(EN_BOOST_GPIO_Port, EN_BOOST_Pin, 0); // Turn off boost PSU
-	MEMLCD_set_disp(&hmemlcd, 0);
+	MEMLCD_power_off(&hmemlcd);
 	EXTFLASH_power_down();
 	USBD_Stop(&hUsbDeviceFS);
 	USBD_DeInit(&hUsbDeviceFS);
@@ -251,6 +254,10 @@ void SleepyTime() {
 	SystemClock_Config();
 	MX_USB_DEVICE_Init();
 	EXTFLASH_power_up();
+	HAL_DAC_Start(&hdac, DAC_CHANNEL_1);
+	MEMLCD_init(&hmemlcd);
+	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
+	TIM3->CCR2 = 6000;
 }
 
 /* USER CODE END 0 */
@@ -259,7 +266,6 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-	uint8_t dirty;
 	uint8_t bt1_tim=0, bt2_tim=0, bt3_tim=0;
   /* USER CODE END 1 */
 
@@ -285,12 +291,6 @@ int main(void)
   /* USER CODE BEGIN 2 */
   MEMLCD_init(&hmemlcd);
   SleepyTime();
-  HAL_GPIO_WritePin(EN_BOOST_GPIO_Port, EN_BOOST_Pin, 1); // Turn on boost PSU
-  HAL_DAC_Start(&hdac, DAC1_CHANNEL_1);
-  MEMLCD_set_disp(&hmemlcd, 1);
-  MEMLCD_clear_all(&hmemlcd);
-  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
-  TIM3->CCR2 = 6000;
   for (int y=0; y<240; y++) {
 	  for(int x=0; x<50; x++) {
 		  //screenbuf[y][x] = ((y&15) >= 2) ? (x&1? 0b00111111 : 0xff): 0b00000000;
@@ -309,7 +309,7 @@ int main(void)
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-	  HAL_DAC_SetValue(&hdac, DAC1_CHANNEL_1, DAC_ALIGN_12B_R, 2730);
+	  HAL_DAC_SetValue(&hdac, DAC1_CHANNEL_1, DAC_ALIGN_12B_R, 2730/4);
 	  if (dirty){
 		  MEMLCD_update_area(&hmemlcd, &screenbuf[0][0], 0, 240);
 		  dirty = 0;
@@ -319,10 +319,7 @@ int main(void)
 		  if (bt1_tim == 100) {
 			  bt1_tim = 250;
 			  SleepyTime();
-			  //HAL_GPIO_WritePin(LED_PWR_GPIO_Port, LED_PWR_Pin, 1); // Turn on LED
-			  HAL_GPIO_WritePin(EN_BOOST_GPIO_Port, EN_BOOST_Pin, 1); // Turn on boost PSU
-			  HAL_DAC_Start(&hdac, DAC1_CHANNEL_1);
-			  MEMLCD_set_disp(&hmemlcd, 1);
+			  dirty = 1;
 		 }
 	  } else {
 		  bt1_tim = 0;

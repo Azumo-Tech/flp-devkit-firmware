@@ -20,9 +20,13 @@ typedef struct MEMLCD_Handle {
 	uint16_t EXTMODE_Pin;
 	GPIO_TypeDef *EXTCOM_Port;
 	uint16_t EXTCOM_Pin;
+	GPIO_TypeDef *BOOST_Port;
+	uint16_t BOOST_Pin;
 } MEMLCD_HandleTypeDef;
 
 void MEMLCD_init(MEMLCD_HandleTypeDef *hmemlcd);
+
+void MEMLCD_power_off(MEMLCD_HandleTypeDef *hmemlcd);
 
 void MEMLCD_clear_all(MEMLCD_HandleTypeDef *hmemlcd);
 
