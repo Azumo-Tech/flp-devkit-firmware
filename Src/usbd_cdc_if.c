@@ -100,6 +100,9 @@ uint8_t UserRxBufferFS[APP_RX_DATA_SIZE];
 uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
 
 /* USER CODE BEGIN PRIVATE_VARIABLES */
+uint8_t ringbuff[128];
+uint8_t *ring_head=ringbuff, *ring_tail=ringbuff;
+
 extern MEMLCD_HandleTypeDef hmemlcd;
 extern volatile uint8_t dirty, save_screen;
 volatile uint8_t *buf;

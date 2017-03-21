@@ -43,7 +43,10 @@ typedef struct MEMLCD_Handle {
 	 uint16_t EXTCOM_Pin;
 	 GPIO_TypeDef *BOOST_Port;
 	 uint16_t BOOST_Pin;
-	 volatile uint8_t buffer[240*150];
+
+	 uint8_t updatecmd;
+
+	 uint8_t buffer[240*150];
 } MEMLCD_HandleTypeDef;
 
 void MEMLCD_init(MEMLCD_HandleTypeDef *hmemlcd);

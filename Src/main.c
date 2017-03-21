@@ -91,7 +91,11 @@ static const uint16_t brightable[256] = {
 };
 
 MEMLCD_HandleTypeDef hmemlcd = {
-    .model = MEMLCD_LS027B7DH01,
+#ifndef JDI
+	.model = MEMLCD_LS027B7DH01,
+#else
+	.model = MEMLCD_LPM013M126A,
+#endif
 	.hspi = &hspi3,
 	.CS_Port = LCD_CS_GPIO_Port,
 	.CS_Pin = LCD_CS_Pin,
