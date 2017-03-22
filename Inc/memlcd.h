@@ -3,6 +3,7 @@
 
 enum MEMLCD_Model {
 	/* Sharp */
+	MEMLCD_LS044Q7DH01,
 	MEMLCD_LS027B7DH01,
 	MEMLCD_LS013B7DH05,
 	/* JDI */
@@ -12,6 +13,7 @@ enum MEMLCD_Model {
 
 static const uint8_t MEMLCD_line_count[] = {
 		/* Sharp */
+		[MEMLCD_LS044Q7DH01] = 240,
 		[MEMLCD_LS027B7DH01] = 240,
 		[MEMLCD_LS013B7DH05] = 168,
 		/* JDI */
@@ -21,6 +23,7 @@ static const uint8_t MEMLCD_line_count[] = {
 
 static const uint8_t MEMLCD_line_length[] = {
 		/* Sharp */
+		[MEMLCD_LS044Q7DH01] = 320/8,
 		[MEMLCD_LS027B7DH01] = 400/8,
 		[MEMLCD_LS013B7DH05] = 144/8,
 		/* JDI */

@@ -2,11 +2,35 @@
 #include "stm32l1xx_hal.h"
 #include "memlcd.h"
 
+#include <string.h>
 #include <stdint.h>
+
+void MEMLCD_BW_writepixel(MEMLCD_HandleTypeDef *hmemlcd, uint16_t x, uint16_t y, uint8_t color) {
+	if (color) {
+		hmemlcd->buffer[MEMLCD_line_length[hmemlcd->model]*y + x/8] |= 1 << (x&7);
+	} else {
+		hmemlcd->buffer[MEMLCD_line_length[hmemlcd->model]*y + x/8] &= ~(1 << (x&7));
+	}
+}
+
+void MEMLCD_BW_blitline(MEMLCD_HandleTypeDef *hmemlcd, uint16_t x, uint16_t y, uint8_t *buff, uint16_t bx, uint16_t width) {
+	uint8_t *line = &(hmemlcd->buffer[y*MEMLCD_line_length[hmemlcd->model]]);
+	while (width) {
+		if (buff[bx/8] & (1 << (bx&7))) {
+			line[x/8] |= 1 << (x&7);
+		} else {
+			line[x/8] &= ~(1 << (x&7));
+		}
+		width -= 1;
+		x += 1;
+		bx += 1;
+	}
+}
+
 
 void MEMLCD_init(MEMLCD_HandleTypeDef *hmemlcd) {
 	HAL_GPIO_WritePin(hmemlcd->EXTMODE_Port, hmemlcd->EXTMODE_Pin, 1);
-	if (hmemlcd->model == MEMLCD_LS027B7DH01) { /* Larger Sharp LCDs need 5v */
+	if (hmemlcd->model == MEMLCD_LS027B7DH01 || hmemlcd->model == MEMLCD_LS044Q7DH01) { /* Larger Sharp LCDs need 5v */
 		HAL_GPIO_WritePin(hmemlcd->BOOST_Port, hmemlcd->BOOST_Pin, 1);
 	}
 
@@ -24,6 +48,7 @@ void MEMLCD_init(MEMLCD_HandleTypeDef *hmemlcd) {
 	switch (hmemlcd->model) {
 	case MEMLCD_LS013B7DH05:
 	case MEMLCD_LS027B7DH01:
+	case MEMLCD_LS044Q7DH01:
 		hmemlcd->updatecmd = 0b001;
 		hmemlcd->hspi->Init.FirstBit = SPI_FIRSTBIT_LSB;
 		break;
