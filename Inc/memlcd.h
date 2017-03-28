@@ -62,6 +62,8 @@ void MEMLCD_set_disp(MEMLCD_HandleTypeDef *hmemlcd, uint8_t state);
 
 void MEMLCD_update_area(MEMLCD_HandleTypeDef *hmemlcd, uint8_t start, uint8_t end);
 
+void MEMLCD_BW_blitline(MEMLCD_HandleTypeDef *hmemlcd, uint16_t x, uint16_t y, uint8_t *buff, uint16_t bx, uint16_t width);
+
 static inline int MEMLCD_bufsize(MEMLCD_HandleTypeDef *hmemlcd) {
 	return MEMLCD_line_count[hmemlcd->model] * MEMLCD_line_length[hmemlcd->model];
 }

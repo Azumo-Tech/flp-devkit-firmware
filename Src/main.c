@@ -221,6 +221,9 @@ void SleepyTime() {
 		HAL_GPIO_WritePin(DBGPIN0_GPIO_Port, DBGPIN0_Pin, 0);
 	}
 	SystemClock_Config();
+	HAL_GPIO_WritePin(USB_DISCONNECT_GPIO_Port, USB_DISCONNECT_Pin, 1);
+	HAL_Delay(10);
+	HAL_GPIO_WritePin(USB_DISCONNECT_GPIO_Port, USB_DISCONNECT_Pin, 0);
 	MX_USB_DEVICE_Init();
 	EXTFLASH_power_up(&hflash);
 	HAL_DAC_Start(&hdac, DAC_CHANNEL_1);
@@ -278,9 +281,18 @@ int main(void)
 
   /* USER CODE BEGIN 3 */
 	  uint16_t current = brightable[brightness];
-	  uint16_t dac_val = (current+12)*1367/1000;
+	  uint16_t dac_val = ((uint32_t)current+12)*5601/4096;
 	  HAL_DAC_SetValue(&hdac, DAC1_CHANNEL_1, DAC_ALIGN_12B_R, dac_val);
 	  if (dirty){
+		  for (int dig=3; dig>=0; dig--) {
+			  for (int y=0; y<32; y++){
+				  MEMLCD_BW_blitline(&hmemlcd, 8, 32+y+dig*32, &sevseg_bin[(y+32*(current%10))*5], 0, 40);
+			  }
+			  current /= 10;
+		  }
+		  for (int y=24; y<32; y++){
+			  MEMLCD_BW_blitline(&hmemlcd, 8, 32+y+1*32, &sevseg_bin[(y+32*10)*5], 0, 40);
+		  }
 		  MEMLCD_update_area(&hmemlcd, 1, -1);
 		  dirty = 0;
 	  }
@@ -304,11 +316,12 @@ int main(void)
 	  }
 	  if (!HAL_GPIO_ReadPin(BT2_GPIO_Port, BT2_Pin)) {
 		  if (bt2_tim < 250) bt2_tim++;
-		  if (bt2_tim >= 60) {
-			  brightness++;
+		  if (bt2_tim >= 40 && HAL_GPIO_ReadPin(LED_PWR_GPIO_Port, LED_PWR_Pin)) {
+			  brightness += (bt2_tim >= 60)? 5: 1;
+			  dirty=1;
 		  }
 	  } else {
-		  if (bt2_tim > 5 && bt2_tim < 60)
+		  if (bt2_tim > 5 && bt2_tim < 40)
 			  HAL_GPIO_TogglePin(LED_PWR_GPIO_Port, LED_PWR_Pin);
 		  bt2_tim = 0;
 	  }
@@ -612,7 +625,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(MEM_CS_GPIO_Port, MEM_CS_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, DBGPIN0_Pin|DBGPIN1_Pin|EN_BOOST_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, USB_DISCONNECT_Pin|DBGPIN0_Pin|DBGPIN1_Pin|EN_BOOST_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LCD_CS_GPIO_Port, LCD_CS_Pin, GPIO_PIN_RESET);
@@ -648,8 +661,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PA3 PA8 */
-  GPIO_InitStruct.Pin = GPIO_PIN_3|GPIO_PIN_8;
+  /*Configure GPIO pin : PA3 */
+  GPIO_InitStruct.Pin = GPIO_PIN_3;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
@@ -674,8 +687,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(MEM_CS_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : DBGPIN0_Pin DBGPIN1_Pin EN_BOOST_Pin */
-  GPIO_InitStruct.Pin = DBGPIN0_Pin|DBGPIN1_Pin|EN_BOOST_Pin;
+  /*Configure GPIO pins : USB_DISCONNECT_Pin DBGPIN0_Pin DBGPIN1_Pin EN_BOOST_Pin */
+  GPIO_InitStruct.Pin = USB_DISCONNECT_Pin|DBGPIN0_Pin|DBGPIN1_Pin|EN_BOOST_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
