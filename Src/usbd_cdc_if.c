@@ -104,7 +104,7 @@ uint8_t ringbuff[128];
 uint8_t *ring_head=ringbuff, *ring_tail=ringbuff;
 
 extern MEMLCD_HandleTypeDef hmemlcd;
-extern volatile uint8_t dirty, save_screen;
+extern volatile uint8_t dirty, save_screen, cur_idx, running;
 volatile uint8_t *buf;
 volatile int16_t togo=0;
 /* USER CODE END PRIVATE_VARIABLES */
@@ -279,6 +279,9 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
   	  dirty = 1;
   } else if (*Len == 1 && Buf[0] == 'L') {
 	  HAL_GPIO_TogglePin(LED_PWR_GPIO_Port, LED_PWR_Pin);
+  } else if (*Len == 1 && Buf[0] >= '0' && Buf[0] <= '9') {
+	  cur_idx = Buf[0] - '0';
+	  running = 0;
   } else if (*Len == 1 && Buf[0] == 'W') {
 	  save_screen = 1;
   } else if (*Len == 1 && Buf[0] == 'T') {

@@ -53,12 +53,16 @@
 
 #define N_PGOOD_Pin GPIO_PIN_13
 #define N_PGOOD_GPIO_Port GPIOC
+#define VBAT_IN_Pin GPIO_PIN_3
+#define VBAT_IN_GPIO_Port GPIOC
 #define BT1_Pin GPIO_PIN_0
 #define BT1_GPIO_Port GPIOA
 #define BT2_Pin GPIO_PIN_1
 #define BT2_GPIO_Port GPIOA
 #define BT3_Pin GPIO_PIN_2
 #define BT3_GPIO_Port GPIOA
+#define VBAT_MEASURE_Pin GPIO_PIN_3
+#define VBAT_MEASURE_GPIO_Port GPIOA
 #define LED_ISET_Pin GPIO_PIN_4
 #define LED_ISET_GPIO_Port GPIOA
 #define CHG_LIMIT_Pin GPIO_PIN_4
