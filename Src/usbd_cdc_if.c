@@ -106,7 +106,7 @@ uint8_t *ring_head=ringbuff, *ring_tail=ringbuff;
 extern MEMLCD_HandleTypeDef hmemlcd;
 extern volatile uint8_t dirty, save_screen, cur_idx, running;
 volatile uint8_t *buf;
-volatile int16_t togo=0;
+volatile int32_t togo=0;
 /* USER CODE END PRIVATE_VARIABLES */
 
 /**

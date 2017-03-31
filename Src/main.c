@@ -95,9 +95,10 @@ static const uint16_t brightable[256] = {
 };
 
 #ifndef MEMLCD_MODEL
-#define MEMLCD_MODEL MEMLCD_LS013B7DH05
+//#define MEMLCD_MODEL MEMLCD_LS013B7DH05
 //#define MEMLCD_MODEL MEMLCD_LS027B7DH01
 //#define MEMLCD_MODEL MEMLCD_LPM013M126A
+#define MEMLCD_MODEL MEMLCD_LPM027M128B
 #endif
 
 MEMLCD_HandleTypeDef hmemlcd = {
@@ -120,7 +121,7 @@ EXTFLASH_HandleTypeDef hflash = {
 	.CS_Port = MEM_CS_GPIO_Port,
 	.CS_Pin = MEM_CS_Pin,
 	.size = 2*1024*1024,
-	.stride = 12*1024
+	.stride = (MEMLCD_MODEL == MEMLCD_LPM027M128B)? 36*1024: 12*1024
 };
 
 volatile uint8_t dirty, cur_idx, save_screen, running, runticks, brightness;
