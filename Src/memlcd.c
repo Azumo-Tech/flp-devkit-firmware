@@ -49,6 +49,7 @@ void MEMLCD_init(MEMLCD_HandleTypeDef *hmemlcd) {
 	case MEMLCD_LS013B7DH05:
 	case MEMLCD_LS027B7DH01:
 	case MEMLCD_LS044Q7DH01:
+	case MEMLCD_LS012B7DH02:
 		hmemlcd->updatecmd = 0b001;
 		hmemlcd->hspi->Init.FirstBit = SPI_FIRSTBIT_LSB;
 		break;
