@@ -304,8 +304,6 @@ int main(void)
 		  }
 #endif
 		  MEMLCD_update_area(&hmemlcd, 1, -1);
-		  //uint8_t bf[] = {cur_idx + '0', ' ','0' + ((togo/10000)%10), '0' + ((togo/1000)%10), '0' + ((togo/100)%10), '0' + ((togo/10)%10), '0' + ((togo)%10), '\n'};
-		  //CDC_Transmit_FS(bf, sizeof(bf));
 		  dirty = 0;
 	  }
 	  if (save_screen) {

@@ -283,8 +283,6 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
   } else if (*Len == 1 && Buf[0] == 'W') {
 	  save_screen = 1;
   } else if (*Len == 1 && Buf[0] == 'T') {
-	  //uint8_t bf[5] = {'-','-','-','0'+cur_idx, '\n'};
-	  //CDC_Transmit_FS(bf, 5);
 	  togo = MEMLCD_bufsize(&hmemlcd);
 	  buf = hmemlcd.buffer;
   }
