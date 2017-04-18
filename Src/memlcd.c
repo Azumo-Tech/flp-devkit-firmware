@@ -100,7 +100,7 @@ void MEMLCD_update_area(MEMLCD_HandleTypeDef *hmemlcd, uint8_t start, uint8_t en
 	uint8_t *buffer = hmemlcd->buffer + (line_len * start);
 	cmd[1] = start;
 	HAL_GPIO_WritePin(hmemlcd->CS_Port, hmemlcd->CS_Pin, 1);
-	while(cmd[1] <= end) {
+	while(cmd[1] <= end+1) {
 		HAL_SPI_Transmit(hmemlcd->hspi, cmd, 2, 10);
 		HAL_SPI_Transmit(hmemlcd->hspi, buffer, line_len, 10);
 		buffer += line_len;

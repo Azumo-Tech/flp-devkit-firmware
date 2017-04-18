@@ -269,8 +269,6 @@ static int8_t CDC_Control_FS  (uint8_t cmd, uint8_t* pbuf, uint16_t length)
 static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 6 */
-  USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
-  USBD_CDC_ReceivePacket(&hUsbDeviceFS);
   if (togo > 0) {
   	  HAL_GPIO_TogglePin(LED_PWR_GPIO_Port, LED_PWR_Pin);
   	  memcpy((void*)buf, (void*)Buf, *Len);
@@ -285,9 +283,13 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
   } else if (*Len == 1 && Buf[0] == 'W') {
 	  save_screen = 1;
   } else if (*Len == 1 && Buf[0] == 'T') {
+	  //uint8_t bf[5] = {'-','-','-','0'+cur_idx, '\n'};
+	  //CDC_Transmit_FS(bf, 5);
 	  togo = MEMLCD_bufsize(&hmemlcd);
 	  buf = hmemlcd.buffer;
   }
+  USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
+  USBD_CDC_ReceivePacket(&hUsbDeviceFS);
   return (USBD_OK);
   /* USER CODE END 6 */ 
 }

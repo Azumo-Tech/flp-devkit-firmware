@@ -96,10 +96,10 @@ static const uint16_t brightable[256] = {
 
 #ifndef MEMLCD_MODEL
 //#define MEMLCD_MODEL MEMLCD_LS013B7DH05
-//#define MEMLCD_MODEL MEMLCD_LS027B7DH01
+#define MEMLCD_MODEL MEMLCD_LS027B7DH01
 //#define MEMLCD_MODEL MEMLCD_LPM013M126A
 //#define MEMLCD_MODEL MEMLCD_LPM027M128B
-#define MEMLCD_MODEL MEMLCD_LS012B7DH02
+//#define MEMLCD_MODEL MEMLCD_LS012B7DH02
 #endif
 
 MEMLCD_HandleTypeDef hmemlcd = {
@@ -304,6 +304,8 @@ int main(void)
 		  }
 #endif
 		  MEMLCD_update_area(&hmemlcd, 1, -1);
+		  //uint8_t bf[] = {cur_idx + '0', ' ','0' + ((togo/10000)%10), '0' + ((togo/1000)%10), '0' + ((togo/100)%10), '0' + ((togo/10)%10), '0' + ((togo)%10), '\n'};
+		  //CDC_Transmit_FS(bf, sizeof(bf));
 		  dirty = 0;
 	  }
 	  if (save_screen) {
@@ -351,7 +353,7 @@ int main(void)
 	  }
 	  if (!runticks) {
 		  runticks = 150;
-		  cur_idx = (cur_idx+1) % 7;
+		  cur_idx = (cur_idx+1) % 10;
 		  EXTFLASH_read_screen(&hflash, cur_idx, (void*)hmemlcd.buffer, MEMLCD_bufsize(&hmemlcd));
 		  dirty = 1;
 	  }
