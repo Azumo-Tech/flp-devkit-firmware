@@ -1,11 +1,13 @@
+#include <stdio.h>
+
 #include "main.h"
 #include "stm32l1xx_hal.h"
+#include "usbd_cdc_if.h"
 
 #include "command.h"
 #include "memlcd.h"
 #include "extflash.h"
-#include "usbd_cdc_if.h"
-#include <stdio.h>;
+#include "eeprom.h"
 
 extern EXTFLASH_HandleTypeDef hflash;
 extern MEMLCD_HandleTypeDef hmemlcd;

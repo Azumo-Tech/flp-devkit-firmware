@@ -51,6 +51,7 @@
 #include "extflash.h"
 #include "segfont.h"
 #include "command.h"
+#include "eeprom.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/

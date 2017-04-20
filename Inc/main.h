@@ -104,12 +104,7 @@
 #define LED_PWR_Pin GPIO_PIN_8
 #define LED_PWR_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
-struct EEPROMSettings {
-    volatile uint32_t cookie;
-    volatile uint8_t slide_count;
-};
 
-#define EEPROM_Settings ((struct EEPROMSettings *) FLASH_EEPROM_BASE)
 /* USER CODE END Private defines */
 
 /**
