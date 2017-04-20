@@ -673,11 +673,11 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, LCD_EXTMODE_Pin|LCD_DISP_Pin|LED_PWR_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : N_PGOOD_Pin N_CHARGING_Pin */
-  GPIO_InitStruct.Pin = N_PGOOD_Pin|N_CHARGING_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  /*Configure GPIO pin : N_PGOOD_Pin */
+  GPIO_InitStruct.Pin = N_PGOOD_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+  HAL_GPIO_Init(N_PGOOD_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PC0 PC1 PC2 PC6 
                            PC7 PC8 PC9 PC11 */
@@ -714,6 +714,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(CHG_LIMIT_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : N_CHARGING_Pin */
+  GPIO_InitStruct.Pin = N_CHARGING_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(N_CHARGING_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : GPIO0_Pin GPIO1_Pin PB2 PB9 */
   GPIO_InitStruct.Pin = GPIO0_Pin|GPIO1_Pin|GPIO_PIN_2|GPIO_PIN_9;
@@ -753,6 +759,9 @@ static void MX_GPIO_Init(void)
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI0_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 }
 
