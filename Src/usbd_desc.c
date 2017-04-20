@@ -79,7 +79,7 @@
 
 #include "stm32l1xx_ll_utils.h"
 
-static uint8_t UUID_serial[] = {'F','L','E','x','-','0','0','0','0','0','0','0','0','0','0','0','0', 0};
+static uint8_t UUID_serial[] = {'F','L','E','x','0','0','0','0','0','0','0','0','0','0','0','0','0', 0};
 
 static const uint8_t hextable[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 
@@ -110,13 +110,13 @@ static uint8_t * USBD_GetUUID_Serial() {
         };
     } word2;
     word2.word = LL_GetUID_Word2();
-    UUID_serial[5] = word0.lot_h[2];
-    UUID_serial[6] = word0.lot_h[1];
-    UUID_serial[7] = word0.lot_h[0];
-    UUID_serial[8] = word1.lot_l[3];
-    UUID_serial[9] = word1.lot_l[2];
-    UUID_serial[10] = word1.lot_l[1];
-    UUID_serial[11] = word1.lot_l[0];
+    UUID_serial[4] = word0.lot_h[2];
+    UUID_serial[5] = word0.lot_h[1];
+    UUID_serial[6] = word0.lot_h[0];
+    UUID_serial[7] = word1.lot_l[3];
+    UUID_serial[8] = word1.lot_l[2];
+    UUID_serial[9] = word1.lot_l[1];
+    UUID_serial[10] = word1.lot_l[0];
     UUID_serial[11] = hextable[(word0.wn/16)&15];
     UUID_serial[12] = hextable[word0.wn&15];
     UUID_serial[13] = hextable[(word2.x/16)&15];
