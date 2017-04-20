@@ -50,6 +50,7 @@
 #include "memlcd.h"
 #include "extflash.h"
 #include "segfont.h"
+#include "command.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -125,7 +126,7 @@ EXTFLASH_HandleTypeDef hflash = {
 	.stride = (MEMLCD_MODEL == MEMLCD_LPM027M128B)? 36*1024: 12*1024
 };
 
-volatile uint8_t dirty, cur_idx, save_screen, running, runticks, brightness;
+volatile uint8_t dirty, cur_idx, running, runticks, brightness;
 
 /* USER CODE END PV */
 
@@ -275,7 +276,6 @@ int main(void)
   cur_idx = 0;
   EXTFLASH_read_screen(&hflash, cur_idx, (void*)hmemlcd.buffer, MEMLCD_bufsize(&hmemlcd));
   dirty = 1;
-  save_screen = 0;
   running = 1;
   runticks = 250;
   /* USER CODE END 2 */
@@ -292,23 +292,8 @@ int main(void)
 	  uint16_t dac_val = ((uint32_t)current+12)*5601/4096;
 	  HAL_DAC_SetValue(&hdac, DAC1_CHANNEL_1, DAC_ALIGN_12B_R, dac_val);
 	  if (dirty){
-#ifdef SHOW_MA
-		  for (int dig=3; dig>=0; dig--) {
-			  for (int y=0; y<32; y++){
-				  MEMLCD_BW_blitline(&hmemlcd, 8, 32+y+dig*32, &sevseg_bin[(y+32*(current%10))*5], 0, 40);
-			  }
-			  current /= 10;
-		  }
-		  for (int y=24; y<32; y++){
-			  MEMLCD_BW_blitline(&hmemlcd, 8, 32+y+1*32, &sevseg_bin[(y+32*10)*5], 0, 40);
-		  }
-#endif
 		  MEMLCD_update_area(&hmemlcd, 1, -1);
 		  dirty = 0;
-	  }
-	  if (save_screen) {
-		  EXTFLASH_write_screen(&hflash, cur_idx, (void*)hmemlcd.buffer, MEMLCD_bufsize(&hmemlcd));
-		  save_screen = 0;
 	  }
 	  if (!HAL_GPIO_ReadPin(BT1_GPIO_Port, BT1_Pin)) {
 		  if (bt1_tim < 250) bt1_tim++;
@@ -351,11 +336,12 @@ int main(void)
 	  }
 	  if (!runticks) {
 		  runticks = 150;
-		  cur_idx = (cur_idx+1) % 10;
+		  cur_idx = (cur_idx+1) % (EEPROM_Settings->slide_count);
 		  EXTFLASH_read_screen(&hflash, cur_idx, (void*)hmemlcd.buffer, MEMLCD_bufsize(&hmemlcd));
 		  dirty = 1;
 	  }
 	  if (running) runticks--;
+	  CMD_tick();
 	  while (HAL_GetTick() - looptime < 20); // Cycle time = 20ms
   }
   /* USER CODE END 3 */

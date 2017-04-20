@@ -44,7 +44,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "usbd_cdc_if.h"
 /* USER CODE BEGIN INCLUDE */
-#include "memlcd.h"
 /* USER CODE END INCLUDE */
 
 /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
@@ -100,13 +99,12 @@ uint8_t UserRxBufferFS[APP_RX_DATA_SIZE];
 uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
 
 /* USER CODE BEGIN PRIVATE_VARIABLES */
-uint8_t ringbuff[128];
-uint8_t *ring_head=ringbuff, *ring_tail=ringbuff;
+#define RINGBUF_SIZE 128
+static uint8_t ringbuf[RINGBUF_SIZE];
+static uint8_t *ring_head=ringbuf, *ring_tail=ringbuf, *ring_max=&ringbuf[RINGBUF_SIZE];
+static size_t ring_count;
+static uint8_t blocked;
 
-extern MEMLCD_HandleTypeDef hmemlcd;
-extern volatile uint8_t dirty, save_screen, cur_idx, running;
-volatile uint8_t *buf;
-volatile int32_t togo=0;
 /* USER CODE END PRIVATE_VARIABLES */
 
 /**
@@ -188,6 +186,8 @@ static int8_t CDC_DeInit_FS(void)
 static int8_t CDC_Control_FS  (uint8_t cmd, uint8_t* pbuf, uint16_t length)
 { 
   /* USER CODE BEGIN 5 */
+	(void) pbuf;
+	(void) length;
   switch (cmd)
   {
   case CDC_SEND_ENCAPSULATED_COMMAND:
@@ -269,26 +269,29 @@ static int8_t CDC_Control_FS  (uint8_t cmd, uint8_t* pbuf, uint16_t length)
 static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 6 */
-  if (togo > 0) {
-  	  HAL_GPIO_TogglePin(LED_PWR_GPIO_Port, LED_PWR_Pin);
-  	  memcpy((void*)buf, (void*)Buf, *Len);
-  	  togo -= *Len;
-  	  buf += *Len;
-  	  dirty = 1;
-  } else if (*Len == 1 && Buf[0] == 'L') {
-	  HAL_GPIO_TogglePin(LED_PWR_GPIO_Port, LED_PWR_Pin);
-  } else if (*Len == 1 && Buf[0] >= '0' && Buf[0] <= '9') {
-	  cur_idx = Buf[0] - '0';
-	  running = 0;
-  } else if (*Len == 1 && Buf[0] == 'W') {
-	  save_screen = 1;
-  } else if (*Len == 1 && Buf[0] == 'T') {
-	  togo = MEMLCD_bufsize(&hmemlcd);
-	  buf = hmemlcd.buffer;
-  }
-  USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
-  USBD_CDC_ReceivePacket(&hUsbDeviceFS);
-  return (USBD_OK);
+    size_t len = *Len;
+    size_t firsthalf = (len > (size_t)(ring_max-ring_head))? (size_t)(ring_max-ring_head): len;
+    if (firsthalf) {
+        memcpy(ring_head, Buf, firsthalf);
+        ring_head += firsthalf;
+        if (ring_head >= ring_max) ring_head = ringbuf;
+    }
+    if (firsthalf < len) {
+        size_t rest = len-firsthalf;
+        memcpy(ring_head, Buf+firsthalf, rest);
+        ring_head += rest;
+    }
+
+    ring_count += len;
+
+    if (ring_count < (RINGBUF_SIZE - APP_RX_DATA_SIZE)) {
+        USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
+        USBD_CDC_ReceivePacket(&hUsbDeviceFS);
+    } else {
+        blocked = 1;
+    }
+
+    return (USBD_OK);
   /* USER CODE END 6 */ 
 }
 
@@ -318,6 +321,35 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
 }
 
 /* USER CODE BEGIN PRIVATE_FUNCTIONS_IMPLEMENTATION */
+
+size_t CDC_read(uint8_t *buf, size_t size) {
+    __disable_irq(); /* ring_count is shared with the ISR, ensure it's not clobbered */
+    size_t toread = (size > ring_count)? ring_count: size;
+    __enable_irq();
+
+    size_t firsthalf = (toread > (size_t)(ring_max-ring_tail))? (size_t)(ring_max-ring_tail): toread;
+    if (firsthalf) {
+        memcpy(buf, ring_tail, firsthalf);
+        ring_tail += firsthalf;
+        if (ring_tail >= ring_max) ring_tail = ringbuf;
+    }
+    if (firsthalf < toread) {
+        size_t rest = toread-firsthalf;
+        memcpy(buf+firsthalf, ring_tail, rest);
+        ring_tail += rest;
+    }
+    __disable_irq(); /* ring_count and blocked are shared with the ISR */
+    ring_count -= toread;
+    if (blocked && ring_count < (RINGBUF_SIZE - APP_RX_DATA_SIZE)) {
+        USBD_CDC_SetRxBuffer(&hUsbDeviceFS, UserRxBufferFS);
+        USBD_CDC_ReceivePacket(&hUsbDeviceFS);
+        blocked = 0;
+    }
+    __enable_irq();
+
+    return toread;
+}
+
 /* USER CODE END PRIVATE_FUNCTIONS_IMPLEMENTATION */
 
 /**

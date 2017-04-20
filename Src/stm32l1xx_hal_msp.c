@@ -54,7 +54,7 @@ extern void Error_Handler(void);
 void HAL_MspInit(void)
 {
   /* USER CODE BEGIN MspInit 0 */
-
+	(void)Error_Handler;
   /* USER CODE END MspInit 0 */
 
   __HAL_RCC_COMP_CLK_ENABLE();
