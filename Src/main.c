@@ -52,6 +52,7 @@
 #include "segfont.h"
 #include "command.h"
 #include "eeprom.h"
+#include "battery-icon.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -128,6 +129,7 @@ EXTFLASH_HandleTypeDef hflash = {
 };
 
 volatile uint8_t dirty, cur_idx, running, runticks, brightness;
+uint8_t batticks, batidx, batdirty;
 
 /* USER CODE END PV */
 
@@ -248,7 +250,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-	uint8_t bt1_tim=0, bt2_tim=0, bt3_tim=0;
+    uint8_t bt1_tim=0, bt2_tim=0, bt3_tim=0;
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -342,6 +344,26 @@ int main(void)
 		  dirty = 1;
 	  }
 	  if (running) runticks--;
+	  if (HAL_GPIO_ReadPin(N_CHARGING_GPIO_Port, N_CHARGING_Pin) == 0) {
+	      if (batticks++ > 20 || dirty) {
+	          batticks=0;
+	          batidx = (((batidx-1) - 1) & 3)+1;
+	          batdirty=1;
+	      }
+	  } else if (HAL_GPIO_ReadPin(N_PGOOD_GPIO_Port, N_PGOOD_Pin) == 0) {
+	      if (batidx != 5 || dirty) {
+	          batidx = 5;
+	          batdirty=1;
+	      }
+	  }
+	  if (batdirty){
+	      for (int y=0; y<8; y++) {
+	          hmemlcd.buffer[(y+9)*MEMLCD_line_length[hmemlcd.model]-3] = battery_bin[(batidx)*16+2*y];
+	          hmemlcd.buffer[(y+9)*MEMLCD_line_length[hmemlcd.model]-2] = battery_bin[(batidx)*16+2*y+1];
+	      }
+	      MEMLCD_update_area(&hmemlcd, 8, 16);
+	      batdirty = 0;
+	  }
 	  CMD_tick();
 	  while (HAL_GetTick() - looptime < 20); // Cycle time = 20ms
   }
