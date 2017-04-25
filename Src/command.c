@@ -30,7 +30,7 @@ static enum CMDCommand {
     CMD_SAVE_SETTING,
 } Command;
 
-uint8_t CurArg, Argc;
+uint8_t CurArg, Argc, ArgHexMode;
 int ArgSign = 1;
 int IntArgv[8];
 
@@ -38,6 +38,7 @@ static void beginIntArgs(uint8_t count) {
     Argc = count;
     CurArg = 0;
     ArgSign = 1;
+    ArgHexMode = 0;
     for (int i=0; i<count; i++) {
         IntArgv[i] = 0;
     }
@@ -114,17 +115,24 @@ void CMD_tick() {
             }
             break;
         case CMD_READ_INT_ARG:
-            if (chr >= '@') {
-                IntArgv[CurArg] = chr - '@';
-                CurArg++;
+            if (ArgHexMode && chr >= '0' && chr <= '9' ){
+                            IntArgv[CurArg] = IntArgv[CurArg]*16 + chr-'0';
+            } else if (ArgHexMode && chr >= 'A' && chr <= 'F' ){
+                IntArgv[CurArg] = IntArgv[CurArg]*16 + 10+chr-'A';
+            } else if (!ArgHexMode && chr >= '0' && chr <= '9') {
+                IntArgv[CurArg] = IntArgv[CurArg]*10 + chr-'0';
+            } else if (!ArgHexMode && chr == '-') {
+                ArgSign *= -1;
+            } else if (chr == '$') {
+                ArgHexMode = 1;
             } else if (chr == ';' || chr == ',') {
                 IntArgv[CurArg] *= ArgSign;
                 CurArg++;
-            } else if (chr >= '0' && chr <= '9') {
-                IntArgv[CurArg] = IntArgv[CurArg]*10 + chr-'0';
-            } else if (chr == '-') {
-                ArgSign *= -1;
-            }else {
+                ArgHexMode = 0;
+            } else if (!ArgHexMode && chr >= '@') {
+                IntArgv[CurArg] = chr - '@';
+                CurArg++;
+            } else {
                 Mode = CMD_NORMAL;
             }
             if (CurArg >= Argc) {
