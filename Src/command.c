@@ -3,6 +3,7 @@
 #include "main.h"
 #include "stm32l1xx_hal.h"
 #include "usbd_cdc_if.h"
+#include "usb_device.h"
 
 #include "command.h"
 #include "memlcd.h"
@@ -13,6 +14,9 @@ extern EXTFLASH_HandleTypeDef hflash;
 extern MEMLCD_HandleTypeDef hmemlcd;
 extern volatile uint8_t running;
 
+/* This code relies on data after BSS being uninitialized on reset, so we know if we wanted to jump to the bootloader */
+extern uint32_t _ebss;
+static uint32_t *dfu_reset_flag = &_ebss+1;
 
 static enum CMDState {
     CMD_NORMAL,
@@ -109,6 +113,13 @@ void CMD_tick() {
                 Command = CMD_GET_SETTING;
                 beginIntArgs(1);
                 break;
+            case 'b':
+                HAL_GPIO_WritePin(USB_DISCONNECT_GPIO_Port, USB_DISCONNECT_Pin, 1);
+                USBD_Stop(&hUsbDeviceFS);
+                HAL_Delay(1000);
+                HAL_NVIC_SystemReset();
+                Mode = CMD_NORMAL;
+                break;
             default:
                 Mode = CMD_NORMAL;
                 break; /* Ignore */
@@ -165,9 +176,13 @@ void CMD_tick() {
                     switch(IntArgv[0]+'@') {
                     case 'N': /* Number of slides */
                         HAL_FLASHEx_DATAEEPROM_Unlock();
-                        HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, &EEPROM_Settings->slide_count, IntArgv[1]);
+                        HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, (size_t)&EEPROM_Settings->slide_count, IntArgv[1]);
                         HAL_FLASHEx_DATAEEPROM_Lock();
                         rlen = snprintf(response, 32, "!slides = %i\n", IntArgv[1]);
+                        break;
+                    case 0xCAFEFF2D:
+                        *dfu_reset_flag = IntArgv[1];
+                        rlen = snprintf(response, 32, "!dfu_flag = %X\n", IntArgv[1]);
                         break;
                     default:
                         rlen = snprintf(response, 32, "Unknown variable %i = %i\n", IntArgv[0], IntArgv[1]);
