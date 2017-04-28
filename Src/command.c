@@ -32,6 +32,7 @@ static enum CMDCommand {
     CMD_WRITE_OP,
     CMD_GET_SETTING,
     CMD_SAVE_SETTING,
+    CMD_SET_CURRENT,
 } Command;
 
 uint8_t CurArg, Argc, ArgHexMode;
@@ -88,6 +89,10 @@ void CMD_tick() {
                 memset(hmemlcd.buffer, 0, MEMLCD_bufsize(&hmemlcd));
                 running = 0;
                 Mode = CMD_NORMAL;
+                break;
+            case 'B': /* Set led current*/
+                Command = CMD_SET_CURRENT;
+                beginIntArgs(1);
                 break;
             case 'E': /* Toggle Echo */
                 EchoOn ^= 0xFF;
@@ -157,12 +162,21 @@ void CMD_tick() {
                     uint8_t idx = (IntArgv[0] > 24)? 24: IntArgv[0];
                     EXTFLASH_write_screen(&hflash, idx, (void*)hmemlcd.buffer, MEMLCD_bufsize(&hmemlcd));
                     break; }
+                case CMD_SET_CURRENT: {
+                    LED_set_current(IntArgv[0]);
+                    break; }
                 case CMD_GET_SETTING: {
                     char response[32];
                     size_t rlen = 0;
                     switch(IntArgv[0]+'@') {
                     case 'N': /* Number of slides */
                         rlen = snprintf(response, 32, "slides = %i\n", EEPROM_Settings->slide_count);
+                        break;
+                    case 'D': /* Default Delay */
+                        rlen = snprintf(response, 32, "delay = %i\n", EEPROM_Settings->default_delay);
+                        break;
+                    case 'C': /* Default LED Current */
+                        rlen = snprintf(response, 32, "current = %i\n", EEPROM_Settings->default_led_current);
                         break;
                     default:
                         rlen = snprintf(response, 32, "UNKNOWN VARIABLE\n");
@@ -179,6 +193,18 @@ void CMD_tick() {
                         HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, (size_t)&EEPROM_Settings->slide_count, IntArgv[1]);
                         HAL_FLASHEx_DATAEEPROM_Lock();
                         rlen = snprintf(response, 32, "!slides = %i\n", IntArgv[1]);
+                        break;
+                    case 'D': /* Default Delay */
+                        HAL_FLASHEx_DATAEEPROM_Unlock();
+                        HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, (size_t)&EEPROM_Settings->default_delay, IntArgv[1]);
+                        HAL_FLASHEx_DATAEEPROM_Lock();
+                        rlen = snprintf(response, 32, "!delay = %i\n", IntArgv[1]);
+                        break;
+                    case 'C': /* Default led current */
+                        HAL_FLASHEx_DATAEEPROM_Unlock();
+                        HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_HALFWORD, (size_t)&EEPROM_Settings->default_led_current, IntArgv[1]);
+                        HAL_FLASHEx_DATAEEPROM_Lock();
+                        rlen = snprintf(response, 32, "!current = %i\n", IntArgv[1]);
                         break;
                     case 0xCAFEFF2D:
                         *dfu_reset_flag = IntArgv[1];

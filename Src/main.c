@@ -74,27 +74,27 @@ TIM_HandleTypeDef htim3;
 /* Private variables ---------------------------------------------------------*/
 
 static const uint16_t brightable[256] = {
-		74, 80, 86, 92, 99, 105, 112, 120, 127, 134, 142, 150, 158, 167, 176,
-		184, 194, 203, 212, 222, 232, 242, 253, 263, 274, 285, 297, 308, 320,
-		332, 344, 357, 369, 382, 395, 408, 422, 436, 449, 464, 478, 493, 507,
-		522, 538, 553, 569, 585, 601, 617, 634, 651, 668, 685, 702, 720, 738,
-		756, 774, 793, 812, 831, 850, 869, 889, 909, 929, 949, 970, 990,
-		1011, 1033, 1054, 1076, 1097, 1119, 1142, 1164, 1187, 1210, 1233,
-		1256, 1280, 1304, 1328, 1352, 1377, 1401, 1426, 1451, 1477, 1502,
-		1528, 1554, 1580, 1607, 1633, 1660, 1687, 1715, 1742, 1770, 1798,
-		1826, 1855, 1883, 1912, 1941, 1970, 2000, 2030, 2060, 2090, 2120,
-		2151, 2182, 2213, 2244, 2276, 2307, 2339, 2371, 2404, 2436, 2469,
-		2502, 2535, 2569, 2569, 2535, 2502, 2469, 2436, 2404, 2371, 2339,
-		2307, 2276, 2244, 2213, 2182, 2151, 2120, 2090, 2060, 2030, 2000,
-		1970, 1941, 1912, 1883, 1855, 1826, 1798, 1770, 1742, 1715, 1687,
-		1660, 1633, 1607, 1580, 1554, 1528, 1502, 1477, 1451, 1426, 1401,
-		1377, 1352, 1328, 1304, 1280, 1256, 1233, 1210, 1187, 1164, 1142,
-		1119, 1097, 1076, 1054, 1033, 1011, 990, 970, 949, 929, 909, 889,
-		869, 850, 831, 812, 793, 774, 756, 738, 720, 702, 685, 668, 651, 634,
-		617, 601, 585, 569, 553, 538, 522, 507, 493, 478, 464, 449, 436, 422,
-		408, 395, 382, 369, 357, 344, 332, 320, 308, 297, 285, 274, 263, 253,
-		242, 232, 222, 212, 203, 194, 184, 176, 167, 158, 150, 142, 134, 127,
-		120, 112, 105, 99, 92, 86, 80, 74
+		740, 800, 860, 920, 990, 1050, 1120, 1200, 1270, 1340, 1420, 1500, 1580, 1670, 1760,
+		1840, 1940, 2030, 2120, 2220, 2320, 2420, 2530, 2630, 2740, 2850, 2970, 3080, 3200,
+		3320, 3440, 3570, 3690, 3820, 3950, 4080, 4220, 4360, 4490, 4640, 4780, 4930, 5070,
+		5220, 5380, 5530, 5690, 5850, 6010, 6170, 6340, 6510, 6680, 6850, 7020, 7200, 7380,
+		7560, 7740, 7930, 8120, 8310, 8500, 8690, 8890, 9090, 9290, 9490, 9700, 9900,
+		10110, 10330, 10540, 10760, 10970, 11190, 11420, 11640, 11870, 12100, 12330,
+		12560, 12800, 13040, 13280, 13520, 13770, 14010, 14260, 14510, 14770, 15020,
+		15280, 15540, 15800, 16070, 16330, 16600, 16870, 17150, 17420, 17700, 17980,
+		18260, 18550, 18830, 19120, 19410, 19700, 20000, 20300, 20600, 20900, 21200,
+		21510, 21820, 22130, 22440, 22760, 23070, 23390, 23710, 24040, 24360, 24690,
+		25020, 25350, 25690, 25690, 25350, 25020, 24690, 24360, 24040, 23710, 23390,
+		23070, 22760, 22440, 22130, 21820, 21510, 21200, 20900, 20600, 20300, 20000,
+		19700, 19410, 19120, 18830, 18550, 18260, 17980, 17700, 17420, 17150, 16870,
+		16600, 16330, 16070, 15800, 15540, 15280, 15020, 14770, 14510, 14260, 14010,
+		13770, 13520, 13280, 13040, 12800, 12560, 12330, 12100, 11870, 11640, 11420,
+		11190, 10970, 10760, 10540, 10330, 10110, 9900, 9700, 9490, 9290, 9090, 8890,
+		8690, 8500, 8310, 8120, 7930, 7740, 7560, 7380, 7200, 7020, 6850, 6680, 6510, 6340,
+		6170, 6010, 5850, 5690, 5530, 5380, 5220, 5070, 4930, 4780, 4640, 4490, 4360, 4220,
+		4080, 3950, 3820, 3690, 3570, 3440, 3320, 3200, 3080, 2970, 2850, 2740, 2630, 2530,
+		2420, 2320, 2220, 2120, 2030, 1940, 1840, 1760, 1670, 1580, 1500, 1420, 1340, 1270,
+		1200, 1120, 1050, 990, 920, 860, 800, 740
 };
 
 #ifndef MEMLCD_MODEL
@@ -223,6 +223,23 @@ void SystemClock_Config_SLOW(void)
 
 /* USER CODE BEGIN 0 */
 
+void LED_write_current(uint16_t current) {
+    if(current > 25000) current = 25000;
+    uint16_t dac_val = ((uint32_t)current+120)*4481/32768;
+    HAL_DAC_SetValue(&hdac, DAC1_CHANNEL_1, DAC_ALIGN_12B_R, dac_val);
+}
+
+void LED_set_current(uint16_t current) {
+    if(current < 30) { /* LED current in mA */
+        current *= 1000;
+    }
+    /* Clamp the brightness value to the absolute maximum */
+    if (current > 25000) current = 25000;
+    /* Find the closest brightness value for manual setting */
+    for (brightness = 0; brightable[brightness] < current && brightness < 127; brightness++);
+    LED_write_current(current);
+}
+
 void SleepyTime() {
 	HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_2);
 	HAL_GPIO_WritePin(LED_PWR_GPIO_Port, LED_PWR_Pin, 0); // Turn off LED
@@ -249,7 +266,17 @@ void SleepyTime() {
 	MEMLCD_init(&hmemlcd);
 	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
 	TIM3->CCR2 = 6000;
-	brightness = 109;
+
+	cur_idx = 0;
+	LED_set_current(EEPROM_Settings->default_led_current);
+	runticks = EEPROM_Settings->slides[cur_idx].delay ? EEPROM_Settings->slides[cur_idx].delay : EEPROM_Settings->default_delay;
+	uint16_t led_current = EEPROM_Settings->slides[cur_idx].led_current;
+	if (led_current) {
+	    LED_set_current(led_current);
+	    HAL_GPIO_WritePin(LED_PWR_GPIO_Port, LED_PWR_Pin, 1);
+	}
+	EXTFLASH_read_screen(&hflash, EEPROM_Settings->slides[cur_idx].img, (void*)hmemlcd.buffer, MEMLCD_bufsize(&hmemlcd));
+	dirty = 1;
 }
 
 /* USER CODE END 0 */
@@ -293,12 +320,21 @@ int main(void)
 
   /* USER CODE BEGIN 2 */
   MEMLCD_init(&hmemlcd);
+  if (EEPROM_Settings->version != FIRMWARE_VERSION) {
+      HAL_FLASHEx_DATAEEPROM_Unlock();
+      HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_WORD, (size_t)&EEPROM_Settings->version, FIRMWARE_VERSION);
+      HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, (size_t)&EEPROM_Settings->default_delay, 150);
+      HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, (size_t)&EEPROM_Settings->slide_count, 10);
+      HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_HALFWORD, (size_t)&EEPROM_Settings->default_led_current, 20000);
+      for (uint8_t i=0; i<64; i++) {
+          HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, (size_t)&EEPROM_Settings->slides[i].delay, 0);
+          HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, (size_t)&EEPROM_Settings->slides[i].img, i);
+          HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_HALFWORD, (size_t)&EEPROM_Settings->slides[i].led_current, 0);
+      }
+      HAL_FLASHEx_DATAEEPROM_Lock();
+  }
   SleepyTime();
-  cur_idx = 0;
-  EXTFLASH_read_screen(&hflash, cur_idx, (void*)hmemlcd.buffer, MEMLCD_bufsize(&hmemlcd));
-  dirty = 1;
   running = 1;
-  runticks = 250;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -309,9 +345,6 @@ int main(void)
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-	  uint16_t current = brightable[brightness];
-	  uint16_t dac_val = ((uint32_t)current+12)*5601/4096;
-	  HAL_DAC_SetValue(&hdac, DAC1_CHANNEL_1, DAC_ALIGN_12B_R, dac_val);
 	  if (dirty){
 		  MEMLCD_update_area(&hmemlcd, 1, -1);
 		  dirty = 0;
@@ -321,11 +354,6 @@ int main(void)
 		  if (bt1_tim == 100) {
 			  bt1_tim = 250;
 			  SleepyTime();
-			  cur_idx = 0;
-			  EXTFLASH_read_screen(&hflash, cur_idx, (void*)hmemlcd.buffer, MEMLCD_bufsize(&hmemlcd));
-			  running = 1;
-			  runticks = 250;
-			  dirty = 1;
 		 }
 	  } else {
 		  bt1_tim = 0;
@@ -334,7 +362,7 @@ int main(void)
 		  if (bt2_tim < 250) bt2_tim++;
 		  if (bt2_tim >= 40 && HAL_GPIO_ReadPin(LED_PWR_GPIO_Port, LED_PWR_Pin)) {
 			  brightness += (bt2_tim >= 60)? 5: 1;
-			  dirty=1;
+			  LED_write_current(brightable[brightness]);
 		  }
 	  } else {
 		  if (bt2_tim > 3 && bt2_tim < 40)
@@ -356,10 +384,15 @@ int main(void)
 		  bt3_tim = 0;
 	  }
 	  if (!runticks) {
-		  runticks = 150;
-		  cur_idx = (cur_idx+1) % (EEPROM_Settings->slide_count);
-		  EXTFLASH_read_screen(&hflash, cur_idx, (void*)hmemlcd.buffer, MEMLCD_bufsize(&hmemlcd));
-		  dirty = 1;
+          cur_idx = (cur_idx+1) % (EEPROM_Settings->slide_count);
+          runticks = EEPROM_Settings->slides[cur_idx].delay ? EEPROM_Settings->slides[cur_idx].delay : EEPROM_Settings->default_delay;
+          uint16_t led_current = EEPROM_Settings->slides[cur_idx].led_current;
+          if (led_current) {
+              LED_set_current(led_current);
+              HAL_GPIO_WritePin(LED_PWR_GPIO_Port, LED_PWR_Pin, 1);
+          }
+          EXTFLASH_read_screen(&hflash, EEPROM_Settings->slides[cur_idx].img, (void*)hmemlcd.buffer, MEMLCD_bufsize(&hmemlcd));
+	      dirty = 1;
 	  }
 	  if (running) runticks--;
 	  if (HAL_GPIO_ReadPin(N_CHARGING_GPIO_Port, N_CHARGING_Pin) == 0) {
