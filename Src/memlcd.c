@@ -29,10 +29,14 @@ void MEMLCD_BW_blitline(MEMLCD_HandleTypeDef *hmemlcd, uint16_t x, uint16_t y, u
 
 
 void MEMLCD_init(MEMLCD_HandleTypeDef *hmemlcd) {
+
+    hmemlcd->flags = MEMLCD_flags[hmemlcd->model];
+    hmemlcd->line_ct = MEMLCD_line_count[hmemlcd->model];
+    hmemlcd->line_len = MEMLCD_line_length[hmemlcd->model];
+
 	HAL_GPIO_WritePin(hmemlcd->EXTMODE_Port, hmemlcd->EXTMODE_Pin, 1);
-	if (hmemlcd->model == MEMLCD_LS027B7DH01 || hmemlcd->model == MEMLCD_LS044Q7DH01) { /* Larger Sharp LCDs need 5v */
-		HAL_GPIO_WritePin(hmemlcd->BOOST_Port, hmemlcd->BOOST_Pin, 1);
-	}
+
+	HAL_GPIO_WritePin(hmemlcd->BOOST_Port, hmemlcd->BOOST_Pin, hmemlcd->flags & MEMLCD_PWR_5V);
 
 	hmemlcd->hspi->Init.Mode = SPI_MODE_MASTER;
 	hmemlcd->hspi->Init.Direction = SPI_DIRECTION_2LINES;
@@ -44,21 +48,7 @@ void MEMLCD_init(MEMLCD_HandleTypeDef *hmemlcd) {
 	hmemlcd->hspi->Init.TIMode = SPI_TIMODE_DISABLE;
 	hmemlcd->hspi->Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
 	hmemlcd->hspi->Init.CRCPolynomial = 10;
-
-	switch (hmemlcd->model) {
-	case MEMLCD_LS013B7DH05:
-	case MEMLCD_LS027B7DH01:
-	case MEMLCD_LS044Q7DH01:
-	case MEMLCD_LS012B7DH02:
-		hmemlcd->updatecmd = 0b001;
-		hmemlcd->hspi->Init.FirstBit = SPI_FIRSTBIT_LSB;
-		break;
-	case MEMLCD_LPM013M126A:
-	case MEMLCD_LPM027M128B:
-		hmemlcd->updatecmd = 0b10000000;
-		hmemlcd->hspi->Init.FirstBit = SPI_FIRSTBIT_MSB;
-		break;
-	}
+	hmemlcd->hspi->Init.FirstBit = SPI_FIRSTBIT_LSB;
 
 	HAL_SPI_Init(hmemlcd->hspi);
 
@@ -91,22 +81,33 @@ void MEMLCD_set_disp(MEMLCD_HandleTypeDef *hmemlcd, uint8_t state) {
 	HAL_GPIO_WritePin(hmemlcd->DISP_Port, hmemlcd->DISP_Pin, state);
 }
 
-void MEMLCD_update_area(MEMLCD_HandleTypeDef *hmemlcd, uint8_t start, uint8_t end) {
-	uint8_t cmd[2] = {hmemlcd->updatecmd, 0};
-	uint8_t line_len = MEMLCD_line_length[hmemlcd->model];
-	uint8_t line_ct = MEMLCD_line_count[hmemlcd->model];
-	end = (end <= line_ct)? end : line_ct;
-	start = (start <= end)? start : end;
-	uint8_t *buffer = hmemlcd->buffer + (line_len * start);
-	cmd[1] = start;
-	HAL_GPIO_WritePin(hmemlcd->CS_Port, hmemlcd->CS_Pin, 1);
-	while(cmd[1] <= end+1) {
-		HAL_SPI_Transmit(hmemlcd->hspi, cmd, 2, 10);
-		HAL_SPI_Transmit(hmemlcd->hspi, buffer, line_len, 10);
-		buffer += line_len;
-		cmd[1]++;
-	}
-	cmd[0] = cmd[1] = 0;
-	HAL_SPI_Transmit(hmemlcd->hspi, cmd, 2, 10);
-	HAL_GPIO_WritePin(hmemlcd->CS_Port, hmemlcd->CS_Pin, 0);
+void MEMLCD_update_area(MEMLCD_HandleTypeDef *hmemlcd, uint16_t start, uint16_t end) {
+    uint8_t cmd[2] = {1, 0};
+    end = (end <= hmemlcd->line_ct)? end : hmemlcd->line_ct;
+    start = (start <= end)? start : end;
+    uint8_t *buffer = hmemlcd->buffer + (hmemlcd->line_len * start);
+    HAL_GPIO_WritePin(hmemlcd->CS_Port, hmemlcd->CS_Pin, 1);
+    for(uint16_t line = start+1; line < end+1; line++) {
+        switch (hmemlcd->flags & 0xF) {
+        case MEMLCD_ADDR_SHARP:
+            cmd[0] = 1;
+            cmd[1] = line & 0xff;
+            break;
+        case MEMLCD_ADDR_SHARP_LONG:
+            cmd[0] = 1 | ((line<<6)&0xff);
+            cmd[1] = (line>>2) & 0xff;
+            break;
+        case MEMLCD_ADDR_JDI: {
+            uint32_t rev_addr = __RBIT(line) >> 22;
+            cmd[0] = 1 | ((rev_addr<<6)&0xff);
+            cmd[1] = (rev_addr>>2) & 0xff;
+            break; }
+        }
+        HAL_SPI_Transmit(hmemlcd->hspi, cmd, 2, 10);
+        HAL_SPI_Transmit(hmemlcd->hspi, buffer, hmemlcd->line_len, 10);
+        buffer += hmemlcd->line_len;
+    }
+    cmd[0] = cmd[1] = 0;
+    HAL_SPI_Transmit(hmemlcd->hspi, cmd, 2, 10);
+    HAL_GPIO_WritePin(hmemlcd->CS_Port, hmemlcd->CS_Pin, 0);
 }
