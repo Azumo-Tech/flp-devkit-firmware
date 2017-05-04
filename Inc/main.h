@@ -106,7 +106,6 @@
 /* USER CODE BEGIN Private defines */
 #define FIRMWARE_VERSION 20170428
 
-void LED_set_current(uint16_t current);
 /* USER CODE END Private defines */
 
 /**
