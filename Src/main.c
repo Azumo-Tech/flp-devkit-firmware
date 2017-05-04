@@ -76,10 +76,10 @@ TIM_HandleTypeDef htim3;
 
 #ifndef MEMLCD_MODEL
 //#define MEMLCD_MODEL MEMLCD_LS013B7DH05
-#define MEMLCD_MODEL MEMLCD_LS027B7DH01
+//#define MEMLCD_MODEL MEMLCD_LS027B7DH01
 //#define MEMLCD_MODEL MEMLCD_LS032B7DD02
 //#define MEMLCD_MODEL MEMLCD_LPM013M126A
-//#define MEMLCD_MODEL MEMLCD_LPM027M128B
+#define MEMLCD_MODEL MEMLCD_LPM027M128B
 //#define MEMLCD_MODEL MEMLCD_LS012B7DH02
 #endif
 
@@ -360,7 +360,7 @@ int main(void)
 	  if (HAL_GPIO_ReadPin(N_CHARGING_GPIO_Port, N_CHARGING_Pin) == 0) {
 	      if (batticks++ > 20 || dirty) {
 	          batticks=0;
-	          batidx = (((batidx-1) - 1) & 3)+1;
+	          batidx = (((batidx-1) + 1) & 3) + 1;
 	          batdirty=1;
 	      }
 	  } else if (HAL_GPIO_ReadPin(N_PGOOD_GPIO_Port, N_PGOOD_Pin) == 0) {
@@ -370,11 +370,16 @@ int main(void)
 	      }
 	  }
 	  if (batdirty){
+	      uint8_t bpp = (hmemlcd.flags * MEMLCD_RGB)? 3 : 1;
 	      for (int y=0; y<8; y++) {
-	          hmemlcd.buffer[(y+9)*MEMLCD_line_length[hmemlcd.model]-3] = battery_bin[(batidx)*16+2*y];
-	          hmemlcd.buffer[(y+9)*MEMLCD_line_length[hmemlcd.model]-2] = battery_bin[(batidx)*16+2*y+1];
+	          uint32_t *dest = &MEMLCD_get_bb_buffer(&hmemlcd)[(y+8)*hmemlcd.line_len*8];
+	          for (int x=0; x<16; x++) {
+	              for (int b=0; b<bpp; b++) {
+	                  dest[b+(x+hmemlcd.line_len*8-24)*bpp] = (battery_bin[(batidx)*16+2*y+x/8] & 1<<(x&7))? 1 : 0;
+	              }
+	          }
 	      }
-	      MEMLCD_update_area(&hmemlcd, 8, 16);
+	      MEMLCD_update_area(&hmemlcd, 8, 24);
 	      batdirty = 0;
 	  }
 	  CMD_tick();

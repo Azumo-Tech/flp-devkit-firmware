@@ -23,42 +23,6 @@ enum MEMLCD_Flags {
     MEMLCD_RGB = 1 << 5,
 };
 
-static const uint8_t MEMLCD_flags[] = {
-        /* Sharp */
-        [MEMLCD_LS012B7DH02] = MEMLCD_ADDR_SHARP | MEMLCD_MONO | MEMLCD_PWR_3V,
-        [MEMLCD_LS013B7DH05] = MEMLCD_ADDR_SHARP | MEMLCD_MONO | MEMLCD_PWR_3V,
-        [MEMLCD_LS027B7DH01] = MEMLCD_ADDR_SHARP | MEMLCD_MONO | MEMLCD_PWR_5V,
-        [MEMLCD_LS032B7DD02] = MEMLCD_ADDR_SHARP_LONG | MEMLCD_MONO | MEMLCD_PWR_5V,
-        [MEMLCD_LS044Q7DH01] = MEMLCD_ADDR_SHARP | MEMLCD_MONO | MEMLCD_PWR_5V,
-        /* JDI */
-        [MEMLCD_LPM027M128B] = MEMLCD_ADDR_JDI | MEMLCD_RGB | MEMLCD_PWR_3V,
-        [MEMLCD_LPM013M126A] = MEMLCD_ADDR_JDI | MEMLCD_RGB | MEMLCD_PWR_3V,
-};
-
-static const uint16_t MEMLCD_line_count[] = {
-        /* Sharp */
-        [MEMLCD_LS012B7DH02] = 240,
-        [MEMLCD_LS013B7DH05] = 168,
-        [MEMLCD_LS027B7DH01] = 240,
-        [MEMLCD_LS032B7DD02] = 536,
-        [MEMLCD_LS044Q7DH01] = 240,
-        /* JDI */
-        [MEMLCD_LPM027M128B] = 240,
-        [MEMLCD_LPM013M126A] = 176,
-};
-
-static const uint8_t MEMLCD_line_length[] = {
-        /* Sharp */
-        [MEMLCD_LS012B7DH02] = 240/8,
-        [MEMLCD_LS013B7DH05] = 144/8,
-        [MEMLCD_LS027B7DH01] = 400/8,
-        [MEMLCD_LS032B7DD02] = 336/8,
-        [MEMLCD_LS044Q7DH01] = 320/8,
-        /* JDI */
-        [MEMLCD_LPM013M126A] = 176/8*3,
-        [MEMLCD_LPM027M128B] = 400/8*3,
-};
-
 typedef struct MEMLCD_Handle {
 	enum MEMLCD_Model model;
 
@@ -95,7 +59,11 @@ void MEMLCD_update_area(MEMLCD_HandleTypeDef *hmemlcd, uint16_t start, uint16_t 
 void MEMLCD_BW_blitline(MEMLCD_HandleTypeDef *hmemlcd, uint16_t x, uint16_t y, uint8_t *buff, uint16_t bx, uint16_t width);
 
 static inline int MEMLCD_bufsize(MEMLCD_HandleTypeDef *hmemlcd) {
-	return MEMLCD_line_count[hmemlcd->model] * MEMLCD_line_length[hmemlcd->model];
+    return hmemlcd->line_ct * hmemlcd->line_len;
+}
+
+static inline uint32_t* MEMLCD_get_bb_buffer(MEMLCD_HandleTypeDef *hmemlcd) {
+    return (uint32_t*)(SRAM_BB_BASE + ((size_t)&hmemlcd->buffer[0] - SRAM_BASE)*32);
 }
 
 #endif

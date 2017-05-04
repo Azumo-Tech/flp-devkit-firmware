@@ -5,6 +5,43 @@
 #include <string.h>
 #include <stdint.h>
 
+static const uint8_t MEMLCD_flags[] = {
+        /* Sharp */
+        [MEMLCD_LS012B7DH02] = MEMLCD_ADDR_SHARP | MEMLCD_MONO | MEMLCD_PWR_3V,
+        [MEMLCD_LS013B7DH05] = MEMLCD_ADDR_SHARP | MEMLCD_MONO | MEMLCD_PWR_3V,
+        [MEMLCD_LS027B7DH01] = MEMLCD_ADDR_SHARP | MEMLCD_MONO | MEMLCD_PWR_5V,
+        [MEMLCD_LS032B7DD02] = MEMLCD_ADDR_SHARP_LONG | MEMLCD_MONO | MEMLCD_PWR_5V,
+        [MEMLCD_LS044Q7DH01] = MEMLCD_ADDR_SHARP | MEMLCD_MONO | MEMLCD_PWR_5V,
+        /* JDI */
+        [MEMLCD_LPM027M128B] = MEMLCD_ADDR_JDI | MEMLCD_RGB | MEMLCD_PWR_3V,
+        [MEMLCD_LPM013M126A] = MEMLCD_ADDR_JDI | MEMLCD_RGB | MEMLCD_PWR_3V,
+};
+
+static const uint16_t MEMLCD_line_count[] = {
+        /* Sharp */
+        [MEMLCD_LS012B7DH02] = 240,
+        [MEMLCD_LS013B7DH05] = 168,
+        [MEMLCD_LS027B7DH01] = 240,
+        [MEMLCD_LS032B7DD02] = 536,
+        [MEMLCD_LS044Q7DH01] = 240,
+        /* JDI */
+        [MEMLCD_LPM027M128B] = 240,
+        [MEMLCD_LPM013M126A] = 176,
+};
+
+static const uint8_t MEMLCD_line_length[] = {
+        /* Sharp */
+        [MEMLCD_LS012B7DH02] = 240/8,
+        [MEMLCD_LS013B7DH05] = 144/8,
+        [MEMLCD_LS027B7DH01] = 400/8,
+        [MEMLCD_LS032B7DD02] = 336/8,
+        [MEMLCD_LS044Q7DH01] = 320/8,
+        /* JDI */
+        [MEMLCD_LPM013M126A] = 176/8*3,
+        [MEMLCD_LPM027M128B] = 400/8*3,
+};
+
+
 void MEMLCD_BW_writepixel(MEMLCD_HandleTypeDef *hmemlcd, uint16_t x, uint16_t y, uint8_t color) {
 	if (color) {
 		hmemlcd->buffer[MEMLCD_line_length[hmemlcd->model]*y + x/8] |= 1 << (x&7);
