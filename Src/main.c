@@ -86,6 +86,8 @@ TIM_HandleTypeDef htim3;
 MEMLCD_HandleTypeDef hmemlcd = {
 	.model = MEMLCD_MODEL,
 	.hspi = &hspi3,
+	.htim = &htim3,
+	.tim_ch = TIM_CHANNEL_2,
 	.CS_Port = LCD_CS_GPIO_Port,
 	.CS_Pin = LCD_CS_Pin,
 	.DISP_Port = LCD_DISP_GPIO_Port,
@@ -204,7 +206,7 @@ void SystemClock_Config_SLOW(void)
 
 
 void SleepyTime() {
-	HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_2);
+
 	HAL_GPIO_WritePin(LED_PWR_GPIO_Port, LED_PWR_Pin, 0); // Turn off LED
 	HAL_DAC_Stop(&hdac, DAC_CHANNEL_1); // Stop LED DAC
 	MEMLCD_power_off(&hmemlcd);
@@ -227,8 +229,6 @@ void SleepyTime() {
 	EXTFLASH_power_up(&hflash);
 	HAL_DAC_Start(&hdac, DAC_CHANNEL_1);
 	MEMLCD_init(&hmemlcd);
-	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
-	TIM3->CCR2 = 6000;
 
 	cur_idx = 0;
 	LED_set_current(EEPROM_Settings->default_led_current);

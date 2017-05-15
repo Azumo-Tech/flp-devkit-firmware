@@ -28,22 +28,25 @@ typedef struct MEMLCD_Handle {
 
 	SPI_HandleTypeDef *hspi;
 
-	 GPIO_TypeDef *CS_Port;
-	 uint16_t CS_Pin;
-	 GPIO_TypeDef *DISP_Port;
-	 uint16_t DISP_Pin;
-	 GPIO_TypeDef *EXTMODE_Port;
-	 uint16_t EXTMODE_Pin;
-	 GPIO_TypeDef *EXTCOM_Port;
-	 uint16_t EXTCOM_Pin;
-	 GPIO_TypeDef *BOOST_Port;
-	 uint16_t BOOST_Pin;
+	TIM_HandleTypeDef *htim;
+	uint32_t tim_ch;
 
-	 uint8_t flags;
-	 uint8_t line_len;
-	 uint16_t line_ct;
+	GPIO_TypeDef *CS_Port;
+	uint16_t CS_Pin;
+	GPIO_TypeDef *DISP_Port;
+	uint16_t DISP_Pin;
+	GPIO_TypeDef *EXTMODE_Port;
+	uint16_t EXTMODE_Pin;
+	GPIO_TypeDef *EXTCOM_Port;
+	uint16_t EXTCOM_Pin;
+	GPIO_TypeDef *BOOST_Port;
+	uint16_t BOOST_Pin;
 
-	 uint8_t buffer[240*150];
+	uint8_t flags;
+	uint8_t line_len;
+	uint16_t line_ct;
+
+	uint8_t buffer[240*150];
 } MEMLCD_HandleTypeDef;
 
 void MEMLCD_init(MEMLCD_HandleTypeDef *hmemlcd);
