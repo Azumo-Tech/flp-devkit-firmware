@@ -9,6 +9,7 @@
 #include "memlcd.h"
 #include "extflash.h"
 #include "eeprom.h"
+#include "led.h"
 
 extern EXTFLASH_HandleTypeDef hflash;
 extern MEMLCD_HandleTypeDef hmemlcd;
