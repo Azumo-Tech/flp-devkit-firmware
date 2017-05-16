@@ -240,6 +240,7 @@ void SleepyTime() {
 	}
 	EXTFLASH_read_screen(&hflash, EEPROM_Settings->slides[cur_idx].img, (void*)hmemlcd.buffer, MEMLCD_bufsize(&hmemlcd));
 	dirty = 1;
+	running = 1;
 }
 
 /* USER CODE END 0 */
@@ -297,7 +298,6 @@ int main(void)
       HAL_FLASHEx_DATAEEPROM_Lock();
   }
   SleepyTime();
-  running = 1;
   /* USER CODE END 2 */
 
   /* Infinite loop */
