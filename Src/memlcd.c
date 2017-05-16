@@ -163,8 +163,8 @@ void MEMLCD_update_area(MEMLCD_HandleTypeDef *hmemlcd, uint16_t start, uint16_t 
             cmd[1] = (rev_addr>>2) & 0xff;
             break; }
         }
-        HAL_SPI_Transmit(hmemlcd->hspi, cmd, 2, 10);
-        HAL_SPI_Transmit(hmemlcd->hspi, buffer, hmemlcd->line_len, 10);
+        HAL_SPI_Transmit(hmemlcd->hspi, cmd, 2, HAL_MAX_DELAY);
+        HAL_SPI_Transmit(hmemlcd->hspi, buffer, hmemlcd->line_len, HAL_MAX_DELAY);
         buffer += hmemlcd->line_len;
     }
     cmd[0] = cmd[1] = 0;
