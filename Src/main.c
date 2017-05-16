@@ -217,9 +217,7 @@ void SleepyTime() {
 	SystemClock_Config_SLOW();
 	while (!HAL_GPIO_ReadPin(BT1_GPIO_Port, BT1_Pin));
 	while (HAL_GPIO_ReadPin(BT1_GPIO_Port, BT1_Pin) && HAL_GPIO_ReadPin(N_PGOOD_GPIO_Port, N_PGOOD_Pin)) {
-		HAL_GPIO_WritePin(DBGPIN0_GPIO_Port, DBGPIN0_Pin, 1);
 		HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_SLEEPENTRY_WFI);
-		HAL_GPIO_WritePin(DBGPIN0_GPIO_Port, DBGPIN0_Pin, 0);
 	}
 	SystemClock_Config();
 	HAL_GPIO_WritePin(USB_DISCONNECT_GPIO_Port, USB_DISCONNECT_Pin, 1);
