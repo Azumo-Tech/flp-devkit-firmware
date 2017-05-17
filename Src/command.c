@@ -230,6 +230,9 @@ void CMD_tick() {
                 switch (Command) {
                 case CMD_DOWNLOAD:
                     MEMLCD_update_area(&hmemlcd, 1, -1);
+                    break;
+                default:
+                    break;
                 }
                 Mode = CMD_NORMAL;
             }
