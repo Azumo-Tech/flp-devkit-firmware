@@ -368,7 +368,7 @@ int main(void)
           }
       }
       if (batdirty){
-          uint8_t bpp = (hmemlcd.flags * MEMLCD_RGB)? 3 : 1;
+          uint8_t bpp = (hmemlcd.flags & MEMLCD_RGB)? 3 : 1;
           for (int y=0; y<8; y++) {
               uint32_t *dest = &MEMLCD_get_bb_buffer(&hmemlcd)[(y+8)*hmemlcd.line_len*8];
               for (int x=0; x<16; x++) {
