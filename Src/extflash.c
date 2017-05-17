@@ -58,12 +58,12 @@ void EXTFLASH_write_aligned_page(EXTFLASH_HandleTypeDef *hflash, uint32_t addr, 
 }
 
 void EXTFLASH_sector_erase(EXTFLASH_HandleTypeDef *hflash, uint32_t addr) {
-	EXTFLASH_write_enable(hflash);
-	uint8_t cmd[] =  {0x20, (addr>>16)&0xff, (addr>>8)&0xff, 0};
-	HAL_GPIO_WritePin(hflash->CS_Port, hflash->CS_Pin, 0);
-	HAL_SPI_Transmit(hflash->hspi, (void*)cmd, 4, 10);
-	HAL_GPIO_WritePin(hflash->CS_Port, hflash->CS_Pin, 1);
-	EXTFLASH_wait_for_busy(hflash);
+    EXTFLASH_write_enable(hflash);
+    uint8_t cmd[] =  {0x20, (addr>>16)&0xff, (addr>>8)&0xff, 0};
+    HAL_GPIO_WritePin(hflash->CS_Port, hflash->CS_Pin, 0);
+    HAL_SPI_Transmit(hflash->hspi, (void*)cmd, 4, 10);
+    HAL_GPIO_WritePin(hflash->CS_Port, hflash->CS_Pin, 1);
+    EXTFLASH_wait_for_busy(hflash);
 }
 
 void EXTFLASH_write_screen(EXTFLASH_HandleTypeDef *hflash, uint8_t index, void *buffer, uint16_t bufsize) {

@@ -75,37 +75,38 @@ TIM_HandleTypeDef htim3;
 /* Private variables ---------------------------------------------------------*/
 
 #ifndef MEMLCD_MODEL
-//#define MEMLCD_MODEL MEMLCD_LS013B7DH05
+#define MEMLCD_MODEL MEMLCD_LS013B7DH05
 //#define MEMLCD_MODEL MEMLCD_LS027B7DH01
 //#define MEMLCD_MODEL MEMLCD_LS032B7DD02
 //#define MEMLCD_MODEL MEMLCD_LPM013M126A
-#define MEMLCD_MODEL MEMLCD_LPM027M128B
+//#define MEMLCD_MODEL MEMLCD_LPM027M128B
 //#define MEMLCD_MODEL MEMLCD_LS012B7DH02
+//#define MEMLCD_MODEL MEMLCD_LS044Q7DH01
 #endif
 
 MEMLCD_HandleTypeDef hmemlcd = {
-	.model = MEMLCD_MODEL,
-	.hspi = &hspi3,
-	.htim = &htim3,
-	.tim_ch = TIM_CHANNEL_2,
-	.CS_Port = LCD_CS_GPIO_Port,
-	.CS_Pin = LCD_CS_Pin,
-	.DISP_Port = LCD_DISP_GPIO_Port,
-	.DISP_Pin = LCD_DISP_Pin,
-	.EXTMODE_Port = LCD_EXTMODE_GPIO_Port,
-	.EXTMODE_Pin = LCD_EXTMODE_Pin,
-	.EXTCOM_Port = LCD_EXTCOM_GPIO_Port,
-	.EXTCOM_Pin = LCD_EXTCOM_Pin,
-	.BOOST_Port = EN_BOOST_GPIO_Port,
-	.BOOST_Pin = EN_BOOST_Pin,
+        .model = MEMLCD_MODEL,
+        .hspi = &hspi3,
+        .htim = &htim3,
+        .tim_ch = TIM_CHANNEL_2,
+        .CS_Port = LCD_CS_GPIO_Port,
+        .CS_Pin = LCD_CS_Pin,
+        .DISP_Port = LCD_DISP_GPIO_Port,
+        .DISP_Pin = LCD_DISP_Pin,
+        .EXTMODE_Port = LCD_EXTMODE_GPIO_Port,
+        .EXTMODE_Pin = LCD_EXTMODE_Pin,
+        .EXTCOM_Port = LCD_EXTCOM_GPIO_Port,
+        .EXTCOM_Pin = LCD_EXTCOM_Pin,
+        .BOOST_Port = EN_BOOST_GPIO_Port,
+        .BOOST_Pin = EN_BOOST_Pin,
 };
 
 EXTFLASH_HandleTypeDef hflash = {
-	.hspi = &hspi2,
-	.CS_Port = MEM_CS_GPIO_Port,
-	.CS_Pin = MEM_CS_Pin,
-	.size = 2*1024*1024,
-	.stride = (MEMLCD_MODEL == MEMLCD_LPM027M128B|| MEMLCD_MODEL == MEMLCD_LS032B7DD02)? 36*1024: 12*1024
+        .hspi = &hspi2,
+        .CS_Port = MEM_CS_GPIO_Port,
+        .CS_Pin = MEM_CS_Pin,
+        .size = 2*1024*1024,
+        .stride = (MEMLCD_MODEL == MEMLCD_LPM027M128B|| MEMLCD_MODEL == MEMLCD_LS032B7DD02)? 36*1024: 12*1024
 };
 
 volatile uint8_t dirty, cur_idx, running, runticks;
@@ -206,39 +207,38 @@ void SystemClock_Config_SLOW(void)
 
 
 void SleepyTime() {
+    HAL_GPIO_WritePin(LED_PWR_GPIO_Port, LED_PWR_Pin, 0); // Turn off LED
+    HAL_DAC_Stop(&hdac, DAC_CHANNEL_1); // Stop LED DAC
+    MEMLCD_power_off(&hmemlcd);
+    EXTFLASH_power_down(&hflash);
+    USBD_Stop(&hUsbDeviceFS);
+    USBD_DeInit(&hUsbDeviceFS);
+    SysTick->CTRL = 0;
+    SystemClock_Config_SLOW();
+    while (!HAL_GPIO_ReadPin(BT1_GPIO_Port, BT1_Pin));
+    while (HAL_GPIO_ReadPin(BT1_GPIO_Port, BT1_Pin) && HAL_GPIO_ReadPin(N_PGOOD_GPIO_Port, N_PGOOD_Pin)) {
+        HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_SLEEPENTRY_WFI);
+    }
+    SystemClock_Config();
+    HAL_GPIO_WritePin(USB_DISCONNECT_GPIO_Port, USB_DISCONNECT_Pin, 1);
+    HAL_Delay(10);
+    HAL_GPIO_WritePin(USB_DISCONNECT_GPIO_Port, USB_DISCONNECT_Pin, 0);
+    MX_USB_DEVICE_Init();
+    EXTFLASH_power_up(&hflash);
+    HAL_DAC_Start(&hdac, DAC_CHANNEL_1);
+    MEMLCD_init(&hmemlcd);
 
-	HAL_GPIO_WritePin(LED_PWR_GPIO_Port, LED_PWR_Pin, 0); // Turn off LED
-	HAL_DAC_Stop(&hdac, DAC_CHANNEL_1); // Stop LED DAC
-	MEMLCD_power_off(&hmemlcd);
-	EXTFLASH_power_down(&hflash);
-	USBD_Stop(&hUsbDeviceFS);
-	USBD_DeInit(&hUsbDeviceFS);
-	SysTick->CTRL = 0;
-	SystemClock_Config_SLOW();
-	while (!HAL_GPIO_ReadPin(BT1_GPIO_Port, BT1_Pin));
-	while (HAL_GPIO_ReadPin(BT1_GPIO_Port, BT1_Pin) && HAL_GPIO_ReadPin(N_PGOOD_GPIO_Port, N_PGOOD_Pin)) {
-		HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_SLEEPENTRY_WFI);
-	}
-	SystemClock_Config();
-	HAL_GPIO_WritePin(USB_DISCONNECT_GPIO_Port, USB_DISCONNECT_Pin, 1);
-	HAL_Delay(10);
-	HAL_GPIO_WritePin(USB_DISCONNECT_GPIO_Port, USB_DISCONNECT_Pin, 0);
-	MX_USB_DEVICE_Init();
-	EXTFLASH_power_up(&hflash);
-	HAL_DAC_Start(&hdac, DAC_CHANNEL_1);
-	MEMLCD_init(&hmemlcd);
-
-	cur_idx = 0;
-	LED_set_current(EEPROM_Settings->default_led_current);
-	runticks = EEPROM_Settings->slides[cur_idx].delay ? EEPROM_Settings->slides[cur_idx].delay : EEPROM_Settings->default_delay;
-	uint16_t led_current = EEPROM_Settings->slides[cur_idx].led_current;
-	if (led_current) {
-	    LED_set_current(led_current);
-	    HAL_GPIO_WritePin(LED_PWR_GPIO_Port, LED_PWR_Pin, 1);
-	}
-	EXTFLASH_read_screen(&hflash, EEPROM_Settings->slides[cur_idx].img, (void*)hmemlcd.buffer, MEMLCD_bufsize(&hmemlcd));
-	dirty = 1;
-	running = 1;
+    cur_idx = 0;
+    LED_set_current(EEPROM_Settings->default_led_current);
+    runticks = EEPROM_Settings->slides[cur_idx].delay ? EEPROM_Settings->slides[cur_idx].delay : EEPROM_Settings->default_delay;
+    uint16_t led_current = EEPROM_Settings->slides[cur_idx].led_current;
+    if (led_current) {
+        LED_set_current(led_current);
+        HAL_GPIO_WritePin(LED_PWR_GPIO_Port, LED_PWR_Pin, 1);
+    }
+    EXTFLASH_read_screen(&hflash, EEPROM_Settings->slides[cur_idx].img, (void*)hmemlcd.buffer, MEMLCD_bufsize(&hmemlcd));
+    dirty = 1;
+    running = 1;
 }
 
 /* USER CODE END 0 */
@@ -302,48 +302,48 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  uint32_t looptime = HAL_GetTick();
+      uint32_t looptime = HAL_GetTick();
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-	  if (dirty){
-		  MEMLCD_update_area(&hmemlcd, 0, -1);
-		  dirty = 0;
-	  }
-	  if (!HAL_GPIO_ReadPin(BT1_GPIO_Port, BT1_Pin)) {
-		  if (bt1_tim < 250) bt1_tim++;
-		  if (bt1_tim == 100) {
-			  bt1_tim = 250;
-			  SleepyTime();
-		 }
-	  } else {
-		  bt1_tim = 0;
-	  }
-	  if (!HAL_GPIO_ReadPin(BT2_GPIO_Port, BT2_Pin)) {
-		  if (bt2_tim < 250) bt2_tim++;
-		  if (bt2_tim >= 40 && HAL_GPIO_ReadPin(LED_PWR_GPIO_Port, LED_PWR_Pin)) {
-		      LED_change_brightness(1);
-		  }
-	  } else {
-		  if (bt2_tim > 3 && bt2_tim < 40)
-			  HAL_GPIO_TogglePin(LED_PWR_GPIO_Port, LED_PWR_Pin);
-		  bt2_tim = 0;
-	  }
+      if (dirty){
+          MEMLCD_update_area(&hmemlcd, 0, -1);
+          dirty = 0;
+      }
+      if (!HAL_GPIO_ReadPin(BT1_GPIO_Port, BT1_Pin)) {
+          if (bt1_tim < 250) bt1_tim++;
+          if (bt1_tim == 100) {
+              bt1_tim = 250;
+              SleepyTime();
+          }
+      } else {
+          bt1_tim = 0;
+      }
+      if (!HAL_GPIO_ReadPin(BT2_GPIO_Port, BT2_Pin)) {
+          if (bt2_tim < 250) bt2_tim++;
+          if (bt2_tim >= 40 && HAL_GPIO_ReadPin(LED_PWR_GPIO_Port, LED_PWR_Pin)) {
+              LED_change_brightness(1);
+          }
+      } else {
+          if (bt2_tim > 3 && bt2_tim < 40)
+              HAL_GPIO_TogglePin(LED_PWR_GPIO_Port, LED_PWR_Pin);
+          bt2_tim = 0;
+      }
 
-	  if (!HAL_GPIO_ReadPin(BT3_GPIO_Port, BT3_Pin)) {
-		  if (bt3_tim < 250) bt3_tim++;
-		  if (bt3_tim == 100) {
-			  running = 1;
-			  runticks = 0;
-		  }
-	  } else {
-		  if (bt3_tim > 3 && bt3_tim < 100) {
-			  running = 0;
-			  runticks = 0;
-		  }
-		  bt3_tim = 0;
-	  }
-	  if (!runticks) {
+      if (!HAL_GPIO_ReadPin(BT3_GPIO_Port, BT3_Pin)) {
+          if (bt3_tim < 250) bt3_tim++;
+          if (bt3_tim == 100) {
+              running = 1;
+              runticks = 0;
+          }
+      } else {
+          if (bt3_tim > 3 && bt3_tim < 100) {
+              running = 0;
+              runticks = 0;
+          }
+          bt3_tim = 0;
+      }
+      if (!runticks) {
           cur_idx = (cur_idx+1) % (EEPROM_Settings->slide_count);
           runticks = EEPROM_Settings->slides[cur_idx].delay ? EEPROM_Settings->slides[cur_idx].delay : EEPROM_Settings->default_delay;
           uint16_t led_current = EEPROM_Settings->slides[cur_idx].led_current;
@@ -352,36 +352,36 @@ int main(void)
               HAL_GPIO_WritePin(LED_PWR_GPIO_Port, LED_PWR_Pin, 1);
           }
           EXTFLASH_read_screen(&hflash, EEPROM_Settings->slides[cur_idx].img, (void*)hmemlcd.buffer, MEMLCD_bufsize(&hmemlcd));
-	      dirty = 1;
-	  }
-	  if (running) runticks--;
-	  if (HAL_GPIO_ReadPin(N_CHARGING_GPIO_Port, N_CHARGING_Pin) == 0) {
-	      if (batticks++ > 20 || dirty) {
-	          batticks=0;
-	          batidx = (((batidx-1) + 1) & 3) + 1;
-	          batdirty=1;
-	      }
-	  } else if (HAL_GPIO_ReadPin(N_PGOOD_GPIO_Port, N_PGOOD_Pin) == 0) {
-	      if (batidx != 5 || dirty) {
-	          batidx = 5;
-	          batdirty=1;
-	      }
-	  }
-	  if (batdirty){
-	      uint8_t bpp = (hmemlcd.flags * MEMLCD_RGB)? 3 : 1;
-	      for (int y=0; y<8; y++) {
-	          uint32_t *dest = &MEMLCD_get_bb_buffer(&hmemlcd)[(y+8)*hmemlcd.line_len*8];
-	          for (int x=0; x<16; x++) {
-	              for (int b=0; b<bpp; b++) {
-	                  dest[b+(x+hmemlcd.line_len*8-24)*bpp] = (battery_bin[(batidx)*16+2*y+x/8] & 1<<(x&7))? 1 : 0;
-	              }
-	          }
-	      }
-	      MEMLCD_update_area(&hmemlcd, 8, 24);
-	      batdirty = 0;
-	  }
-	  CMD_tick();
-	  while (HAL_GetTick() - looptime < 20); // Cycle time = 20ms
+          dirty = 1;
+      }
+      if (running) runticks--;
+      if (HAL_GPIO_ReadPin(N_CHARGING_GPIO_Port, N_CHARGING_Pin) == 0) {
+          if (batticks++ > 20 || dirty) {
+              batticks=0;
+              batidx = (((batidx-1) + 1) & 3) + 1;
+              batdirty=1;
+          }
+      } else if (HAL_GPIO_ReadPin(N_PGOOD_GPIO_Port, N_PGOOD_Pin) == 0) {
+          if (batidx != 5 || dirty) {
+              batidx = 5;
+              batdirty=1;
+          }
+      }
+      if (batdirty){
+          uint8_t bpp = (hmemlcd.flags * MEMLCD_RGB)? 3 : 1;
+          for (int y=0; y<8; y++) {
+              uint32_t *dest = &MEMLCD_get_bb_buffer(&hmemlcd)[(y+8)*hmemlcd.line_len*8];
+              for (int x=0; x<16; x++) {
+                  for (int b=0; b<bpp; b++) {
+                      dest[b+(x+hmemlcd.line_len*8-24)*bpp] = (battery_bin[(batidx)*16+2*y+x/8] & 1<<(x&7))? 1 : 0;
+                  }
+              }
+          }
+          MEMLCD_update_area(&hmemlcd, 8, 24);
+          batdirty = 0;
+      }
+      CMD_tick();
+      while (HAL_GetTick() - looptime < 20); // Cycle time = 20ms
   }
   /* USER CODE END 3 */
 
