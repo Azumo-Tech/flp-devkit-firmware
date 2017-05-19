@@ -75,14 +75,15 @@ TIM_HandleTypeDef htim3;
 /* Private variables ---------------------------------------------------------*/
 
 #ifndef MEMLCD_MODEL
-#define MEMLCD_MODEL MEMLCD_LS013B7DH05
+//#define MEMLCD_MODEL MEMLCD_LS013B7DH05
 //#define MEMLCD_MODEL MEMLCD_LS027B7DH01
 //#define MEMLCD_MODEL MEMLCD_LS032B7DD02
 //#define MEMLCD_MODEL MEMLCD_LPM013M126A
-//#define MEMLCD_MODEL MEMLCD_LPM027M128B
+#define MEMLCD_MODEL MEMLCD_LPM027M128B
 //#define MEMLCD_MODEL MEMLCD_LS012B7DH02
 //#define MEMLCD_MODEL MEMLCD_LS044Q7DH01
 #endif
+#define USE_BAT_ICON
 
 MEMLCD_HandleTypeDef hmemlcd = {
         .model = MEMLCD_MODEL,
@@ -355,6 +356,7 @@ int main(void)
           dirty = 1;
       }
       if (running) runticks--;
+#ifdef USE_BAT_ICON
       if (HAL_GPIO_ReadPin(N_CHARGING_GPIO_Port, N_CHARGING_Pin) == 0) {
           if (batticks++ > 20 || dirty) {
               batticks=0;
@@ -380,6 +382,7 @@ int main(void)
           MEMLCD_update_area(&hmemlcd, 8, 24);
           batdirty = 0;
       }
+#endif
       CMD_tick();
       while (HAL_GetTick() - looptime < 20); // Cycle time = 20ms
   }
