@@ -60,6 +60,7 @@ static void beginBinTransfer(uint8_t *buf, size_t count) {
     Mode = CMD_READ_BIN_ARG;
 }
 
+uint16_t BATTERY_read_voltage();
 
 uint8_t EchoOn=0;
 
@@ -178,6 +179,9 @@ void CMD_tick() {
                         break;
                     case 'C': /* Default LED Current */
                         rlen = snprintf(response, 32, "current = %i\n", EEPROM_Settings->default_led_current);
+                        break;
+                    case 'B':
+                        rlen = snprintf(response, 32, "vbat = %i\r\n", BATTERY_read_voltage());
                         break;
                     default:
                         rlen = snprintf(response, 32, "UNKNOWN VARIABLE\n");

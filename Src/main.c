@@ -76,10 +76,10 @@ TIM_HandleTypeDef htim3;
 
 #ifndef MEMLCD_MODEL
 //#define MEMLCD_MODEL MEMLCD_LS013B7DH05
-//#define MEMLCD_MODEL MEMLCD_LS027B7DH01
+#define MEMLCD_MODEL MEMLCD_LS027B7DH01
 //#define MEMLCD_MODEL MEMLCD_LS032B7DD02
 //#define MEMLCD_MODEL MEMLCD_LPM013M126A
-#define MEMLCD_MODEL MEMLCD_LPM027M128B
+//#define MEMLCD_MODEL MEMLCD_LPM027M128B
 //#define MEMLCD_MODEL MEMLCD_LS012B7DH02
 //#define MEMLCD_MODEL MEMLCD_LS044Q7DH01
 #endif
@@ -205,7 +205,31 @@ void SystemClock_Config_SLOW(void)
 
 /* USER CODE BEGIN 0 */
 
+uint16_t BATTERY_read_voltage() {
+    HAL_GPIO_WritePin(VBAT_MEASURE_GPIO_Port, VBAT_MEASURE_Pin, 1);
+    HAL_Delay(5);
+    ADC_ChannelConfTypeDef adcChannel;
+    adcChannel.Channel = ADC_CHANNEL_VREFINT;
+    adcChannel.Rank = 1;
+    adcChannel.SamplingTime = ADC_SAMPLETIME_192CYCLES;
+    HAL_ADC_ConfigChannel(&hadc, &adcChannel);
+    HAL_ADC_Start(&hadc);
+    HAL_ADC_PollForConversion(&hadc, 1000);
+    uint16_t vdda_raw_adc = HAL_ADC_GetValue(&hadc);
+    uint16_t vdda = (3000L*(*(uint16_t*)0x1FF800F8)) / vdda_raw_adc;
 
+    adcChannel.Channel = ADC_CHANNEL_13;
+    adcChannel.Rank = 1;
+    adcChannel.SamplingTime = ADC_SAMPLETIME_192CYCLES;
+    HAL_ADC_ConfigChannel(&hadc, &adcChannel);
+    HAL_ADC_Start(&hadc);
+    HAL_ADC_PollForConversion(&hadc, 1000);
+    uint16_t vbat_raw_adc = HAL_ADC_GetValue(&hadc);
+    uint16_t vbat = (3000LL * (*(uint16_t*)0x1FF800F8) * vbat_raw_adc) / (2048L * vdda_raw_adc);
+    HAL_GPIO_WritePin(VBAT_MEASURE_GPIO_Port, VBAT_MEASURE_Pin, 0);
+
+    return vbat;
+}
 
 void SleepyTime() {
     HAL_GPIO_WritePin(LED_PWR_GPIO_Port, LED_PWR_Pin, 0); // Turn off LED
