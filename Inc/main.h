@@ -3,6 +3,11 @@
   * File Name          : main.h
   * Description        : This file contains the common defines of the application
   ******************************************************************************
+  * This notice applies to any and all portions of this file
+  * that are not between comment pairs USER CODE BEGIN and
+  * USER CODE END. Other portions of this file, whether 
+  * inserted by the user or by software development tools
+  * are owned by their respective copyright owners.
   *
   * Copyright (c) 2017 STMicroelectronics International N.V. 
   * All rights reserved.
@@ -53,10 +58,12 @@
 
 #define N_PGOOD_Pin GPIO_PIN_13
 #define N_PGOOD_GPIO_Port GPIOC
+#define N_PGOOD_EXTI_IRQn EXTI15_10_IRQn
 #define VBAT_IN_Pin GPIO_PIN_3
 #define VBAT_IN_GPIO_Port GPIOC
 #define BT1_Pin GPIO_PIN_0
 #define BT1_GPIO_Port GPIOA
+#define BT1_EXTI_IRQn EXTI0_IRQn
 #define BT2_Pin GPIO_PIN_1
 #define BT2_GPIO_Port GPIOA
 #define BT3_Pin GPIO_PIN_2
@@ -103,10 +110,15 @@
 #define LCD_EXTCOM_GPIO_Port GPIOB
 #define LED_PWR_Pin GPIO_PIN_8
 #define LED_PWR_GPIO_Port GPIOB
+
 /* USER CODE BEGIN Private defines */
 #define FIRMWARE_VERSION 20170428
 
 /* USER CODE END Private defines */
+
+void _Error_Handler(char *, int);
+
+#define Error_Handler() _Error_Handler(__FILE__, __LINE__)
 
 /**
   * @}
