@@ -11,6 +11,7 @@ enum MEMLCD_Model {
     /* JDI */
     MEMLCD_LPM013M126A,
     MEMLCD_LPM027M128B,
+    MEMLCD_MAX
 };
 
 enum MEMLCD_Flags {

@@ -30,6 +30,7 @@ static enum CMDCommand {
     CMD_LOAD,
     CMD_WRITE,
     CMD_DOWNLOAD,
+    CMD_FILL,
     CMD_WRITE_OP,
     CMD_GET_SETTING,
     CMD_SAVE_SETTING,
@@ -112,6 +113,10 @@ void CMD_tick() {
                 Command = CMD_WRITE;
                 beginIntArgs(1);
                 break;
+            case 'F': /* Fill with a color */
+                Command = CMD_FILL;
+                beginIntArgs(1);
+                break;
             case '!': /* Save option */
                 Command = CMD_SAVE_SETTING;
                 beginIntArgs(2);
@@ -158,11 +163,31 @@ void CMD_tick() {
                 case CMD_LOAD: {
                     uint8_t idx = (IntArgv[0] > 24)? 24: IntArgv[0];
                     EXTFLASH_read_screen(&hflash, idx, (void*)hmemlcd.buffer, MEMLCD_bufsize(&hmemlcd));
-                    MEMLCD_update_area(&hmemlcd, 1, -1);
+                    MEMLCD_update_area(&hmemlcd, 0, -1);
                     break; }
                 case CMD_WRITE: {
                     uint8_t idx = (IntArgv[0] > 24)? 24: IntArgv[0];
                     EXTFLASH_write_screen(&hflash, idx, (void*)hmemlcd.buffer, MEMLCD_bufsize(&hmemlcd));
+                    break; }
+                case CMD_FILL: {
+                    if (hmemlcd.flags & MEMLCD_RGB) {
+                        uint32_t colormask = (IntArgv[0] & 7) * 0b001001001001001001001001;
+                        for (int y=0; y<hmemlcd.line_ct; y++) {
+                            for (int x=0; x<hmemlcd.line_len; x+=3) {
+                                hmemlcd.buffer[y*hmemlcd.line_len+x+2] = (colormask >> 16) & 0xff;
+                                hmemlcd.buffer[y*hmemlcd.line_len+x+1] = (colormask >> 8) & 0xff;
+                                hmemlcd.buffer[y*hmemlcd.line_len+x+0] = (colormask) & 0xff;
+                            }
+                        }
+                    } else {
+                        uint8_t color = (IntArgv[0])? 0xff: 0;
+                        for (int y=0; y<hmemlcd.line_ct; y++) {
+                            for (int x=0; x<hmemlcd.line_len; x++) {
+                                hmemlcd.buffer[y*hmemlcd.line_len+x] = color;
+                            }
+                        }
+                    }
+                    MEMLCD_update_area(&hmemlcd, 0,-1 );
                     break; }
                 case CMD_SET_CURRENT: {
                     LED_set_current(IntArgv[0]);
@@ -179,6 +204,9 @@ void CMD_tick() {
                         break;
                     case 'C': /* Default LED Current */
                         rlen = snprintf(response, 32, "current = %i\n", EEPROM_Settings->default_led_current);
+                        break;
+                    case 'M': /* Display Model */
+                        rlen = snprintf(response, 32, "display_model = %i\r\n", hmemlcd.model);
                         break;
                     case 'B':
                         rlen = snprintf(response, 32, "vbat = %i\r\n", BATTERY_read_voltage());
@@ -210,6 +238,15 @@ void CMD_tick() {
                         HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_HALFWORD, (size_t)&EEPROM_Settings->default_led_current, IntArgv[1]);
                         HAL_FLASHEx_DATAEEPROM_Lock();
                         rlen = snprintf(response, 32, "!current = %i\n", IntArgv[1]);
+                        break;
+                    case 'M':
+                        if (IntArgv[1] >= 0 && IntArgv[1] < MEMLCD_MAX) {
+                            hmemlcd.model = IntArgv[1];
+                            MEMLCD_init(&hmemlcd);
+                            rlen = snprintf(response, 32, "!display_model = %i\r\n", IntArgv[1]);
+                        } else {
+                            rlen = snprintf(response, 32, "Unknown Model %i\n", IntArgv[1]);
+                        }
                         break;
                     case 0xCAFEFF2D:
                         *dfu_reset_flag = IntArgv[1];
