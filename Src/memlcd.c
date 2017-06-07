@@ -180,6 +180,35 @@ inline static void MEMLCD_tilelayers_RGB(MEMLCD_HandleTypeDef *hmemlcd, uint16_t
     }
 }
 
+
+inline static void MEMLCD_tilelayers_mono(MEMLCD_HandleTypeDef *hmemlcd, uint16_t line, uint8_t* linebuf) {
+    for (int i=0; i<3; i++) {
+        struct TileLayer tl = hmemlcd->tilemaps[i];
+        if (tl.tiles == NULL || tl.map == NULL) continue;
+        uint8_t tilewidth = (tl.tile_size & 0x3) + 1;
+        uint8_t tileheight = ((tl.tile_size >> 2) & 0x3) + 1;
+        int y = ((hmemlcd->flags & MEMLCD_VFLIP)? (hmemlcd->line_ct - 1 - line - tl.scroll_y) : line - tl.scroll_y);
+        int ytile = y/(tileheight*8);
+        if (y < 0 || ytile >= ((tl.flags & TILE_TRANSPOSE)? tl.width: tl.height)) continue;
+        uint8_t ysubtile = (y/8) % tileheight;
+        for (int x=0; x < hmemlcd->line_len; x++) {
+            int xt = ((hmemlcd->flags & MEMLCD_HFLIP)? ((hmemlcd->line_len-x) - 1 - tl.scroll_x/8) : x - tl.scroll_x/8);
+            int xtile = xt/tilewidth;
+            if (xt < 0) continue;
+            if(xtile >= ((tl.flags & TILE_TRANSPOSE)?  tl.height: tl.width)) continue;
+            uint8_t xsubtile = xt % tilewidth;
+
+            uint16_t tilecoord = (tl.flags & TILE_TRANSPOSE)? (ytile + (tl.height-1-xtile)*tl.width) : (ytile*tl.width + xtile);
+            if(tl.map[tilecoord]) {
+                uint16_t subtile = ((tl.map[tilecoord]*tileheight + ysubtile)*tilewidth + xsubtile)*8 + (y & 7);
+                uint8_t tilebits = (hmemlcd->flags & MEMLCD_HFLIP) ? (__RBIT(~tl.tiles[subtile])>>24): ~tl.tiles[subtile];
+                linebuf[x] = tilebits;
+            }
+        }
+    }
+}
+
+
 void MEMLCD_send_next_line() {
     if (Upd.hmemlcd == NULL) return;
     MEMLCD_HandleTypeDef *hmemlcd = Upd.hmemlcd;
@@ -208,7 +237,11 @@ void MEMLCD_send_next_line() {
         }
         memset(&cmd[2], 0xff, hmemlcd->line_len);
         memcpy(&cmd[2], &hmemlcd->buffer[hmemlcd->line_len * (Upd.line-1)], hmemlcd->line_len);
-        MEMLCD_tilelayers_RGB(hmemlcd, Upd.line-1, &cmd[2]);
+        if (hmemlcd->flags & MEMLCD_RGB) {
+            MEMLCD_tilelayers_RGB(hmemlcd, Upd.line-1, &cmd[2]);
+        } else {
+            MEMLCD_tilelayers_mono(hmemlcd, Upd.line-1, &cmd[2]);
+        }
         while(hmemlcd->hspi->State == HAL_SPI_STATE_BUSY_TX);
         HAL_SPI_Transmit_DMA(hmemlcd->hspi, cmd, hmemlcd->line_len+2);
         HAL_GPIO_TogglePin(DBGPIN0_GPIO_Port, DBGPIN0_Pin);
