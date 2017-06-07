@@ -29,7 +29,7 @@ static const uint8_t MEMLCD_vcom_freq[] = {
         [MEMLCD_LPM013M126A] = 5,
 };
 
-static const uint16_t MEMLCD_line_count[] = {
+static const uint16_t MEMLCD_height[] = {
         /* Sharp */
         [MEMLCD_LS012B7DH02] = 240,
         [MEMLCD_LS013B7DH05] = 168,
@@ -41,16 +41,16 @@ static const uint16_t MEMLCD_line_count[] = {
         [MEMLCD_LPM013M126A] = 176,
 };
 
-static const uint8_t MEMLCD_line_length[] = {
+static const uint16_t MEMLCD_width[] = {
         /* Sharp */
-        [MEMLCD_LS012B7DH02] = 240/8,
-        [MEMLCD_LS013B7DH05] = 144/8,
-        [MEMLCD_LS027B7DH01] = 400/8,
-        [MEMLCD_LS032B7DD02] = 336/8,
-        [MEMLCD_LS044Q7DH01] = 320/8,
+        [MEMLCD_LS012B7DH02] = 240,
+        [MEMLCD_LS013B7DH05] = 144,
+        [MEMLCD_LS027B7DH01] = 400,
+        [MEMLCD_LS032B7DD02] = 336,
+        [MEMLCD_LS044Q7DH01] = 320,
         /* JDI */
-        [MEMLCD_LPM013M126A] = 176/8*3,
-        [MEMLCD_LPM027M128B] = 400/8*3,
+        [MEMLCD_LPM013M126A] = 176,
+        [MEMLCD_LPM027M128B] = 400,
 };
 
 struct MEMLCD_UpdateState {
@@ -58,33 +58,14 @@ struct MEMLCD_UpdateState {
     uint16_t start, end, line;
 } Upd;
 
-void MEMLCD_BW_writepixel(MEMLCD_HandleTypeDef *hmemlcd, uint16_t x, uint16_t y, uint8_t color) {
-    if (color) {
-        hmemlcd->buffer[MEMLCD_line_length[hmemlcd->model]*y + x/8] |= 1 << (x&7);
-    } else {
-        hmemlcd->buffer[MEMLCD_line_length[hmemlcd->model]*y + x/8] &= ~(1 << (x&7));
-    }
-}
-
-void MEMLCD_BW_blitline(MEMLCD_HandleTypeDef *hmemlcd, uint16_t x, uint16_t y, uint8_t *buff, uint16_t bx, uint16_t width) {
-    uint8_t *line = &(hmemlcd->buffer[y*MEMLCD_line_length[hmemlcd->model]]);
-    while (width) {
-        if (buff[bx/8] & (1 << (bx&7))) {
-            line[x/8] |= 1 << (x&7);
-        } else {
-            line[x/8] &= ~(1 << (x&7));
-        }
-        width -= 1;
-        x += 1;
-        bx += 1;
-    }
-}
-
 
 void MEMLCD_init(MEMLCD_HandleTypeDef *hmemlcd) {
     hmemlcd->flags = MEMLCD_flags[hmemlcd->model];
-    hmemlcd->line_ct = MEMLCD_line_count[hmemlcd->model];
-    hmemlcd->line_len = MEMLCD_line_length[hmemlcd->model];
+    hmemlcd->width = MEMLCD_width[hmemlcd->model];
+    hmemlcd->height = MEMLCD_height[hmemlcd->model];
+
+    hmemlcd->line_ct = hmemlcd->height;
+    hmemlcd->line_len = hmemlcd->width/8 * ((hmemlcd->flags & MEMLCD_RGB) ? 3 : 1);
 
     HAL_GPIO_WritePin(hmemlcd->EXTMODE_Port, hmemlcd->EXTMODE_Pin, 1);
 

@@ -64,11 +64,11 @@ typedef struct MEMLCD_Handle {
     uint8_t flags;
     uint8_t line_len;
     uint16_t line_ct;
+    uint16_t width, height;
 
     uint8_t linebuf[2][256];
     uint8_t buffer[240*150];
     struct TileLayer tilemaps[3];
-    uint8_t *font;
 } MEMLCD_HandleTypeDef;
 
 void MEMLCD_init(MEMLCD_HandleTypeDef *hmemlcd);
