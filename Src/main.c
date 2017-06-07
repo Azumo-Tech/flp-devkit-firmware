@@ -84,11 +84,11 @@ TIM_HandleTypeDef htim3;
 /* Private variables ---------------------------------------------------------*/
 
 #ifndef MEMLCD_MODEL
-//#define MEMLCD_MODEL MEMLCD_LS013B7DH05
+#define MEMLCD_MODEL MEMLCD_LS013B7DH05
 //#define MEMLCD_MODEL MEMLCD_LS027B7DH01
 //#define MEMLCD_MODEL MEMLCD_LS032B7DD02
 //#define MEMLCD_MODEL MEMLCD_LPM013M126A
-#define MEMLCD_MODEL MEMLCD_LPM027M128B
+//#define MEMLCD_MODEL MEMLCD_LPM027M128B
 //#define MEMLCD_MODEL MEMLCD_LS012B7DH02
 //#define MEMLCD_MODEL MEMLCD_LS044Q7DH01
 #endif
@@ -125,7 +125,7 @@ volatile uint8_t dirty, cur_idx, running, runticks;
 uint8_t batticks, batidx, batdirty;
 uint8_t led_message[] = {
         201,205,205,205,205,205,205,205,205,205,205,205,205,205,205,187,
-        186,' ','1',' ','L','E','D',' ','2','0','.',' 0','m','A',' ',186,
+        186,' ','1',' ','L','E','D',' ','2','0','.','0','m','A',' ',186,
         200,205,205,205,205,205,205,205,205,205,205,205,205,205,205,188,
 };
 
@@ -288,7 +288,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-    uint8_t bt1_tim=0, bt2_tim=0, bt3_tim=0, ledmsg_tim;
+    uint8_t bt1_tim=0, bt2_tim=0, bt3_tim=0, ledmsg_tim=0;
 
     if (*dfu_reset_flag == DFU_RESET_COOKIE) {
             void (*bootloader)(
@@ -345,6 +345,22 @@ int main(void)
       }
       HAL_FLASHEx_DATAEEPROM_Lock();
   }
+  hmemlcd.tilemaps[0].height = 3;
+  hmemlcd.tilemaps[0].width = 16;
+  if (hmemlcd.flags & MEMLCD_ROT270) {
+      hmemlcd.tilemaps[0].tile_size = 1 | 0<<2;
+      hmemlcd.tilemaps[0].scroll_x = (hmemlcd.width-48)/2;
+      hmemlcd.tilemaps[0].scroll_y = (hmemlcd.height-128)/2;
+      hmemlcd.tilemaps[0].tiles = font8x16_transp_bits;
+      hmemlcd.tilemaps[0].flags = TILE_TRANSPOSE;
+  } else {
+      hmemlcd.tilemaps[0].tile_size = 0 | 1<<2;
+      hmemlcd.tilemaps[0].scroll_x = (hmemlcd.width-128)/2;
+      hmemlcd.tilemaps[0].scroll_y = (hmemlcd.height-48)/2;
+      hmemlcd.tilemaps[0].tiles = font8x16_bits;
+      hmemlcd.tilemaps[0].flags = 0;
+  }
+  hmemlcd.tilemaps[0].map = NULL;
   SleepyTime();
   /* USER CODE END 2 */
 
@@ -436,14 +452,7 @@ int main(void)
 #endif
       if (!MEMLCD_busy()) {
           if(ledmsg_tim) {
-              hmemlcd.tilemaps[0].height = 3;
-              hmemlcd.tilemaps[0].width = 16;
-              hmemlcd.tilemaps[0].tile_size = 1 | 0<<2;
-              hmemlcd.tilemaps[0].scroll_x = (400-48)/2;
-              hmemlcd.tilemaps[0].scroll_y = (240-128)/2;
               hmemlcd.tilemaps[0].map = led_message;
-              hmemlcd.tilemaps[0].tiles = font8x16_transp_bits;
-              hmemlcd.tilemaps[0].flags = TILE_TRANSPOSE;
               uint8_t current_ma = LED_get_current() / 100;
               led_message[16+11] = '0' + current_ma % 10;
               current_ma /= 10;

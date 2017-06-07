@@ -23,7 +23,8 @@ enum MEMLCD_Flags {
     MEMLCD_MONO = 0 << 5,
     MEMLCD_RGB = 1 << 5,
     MEMLCD_VFLIP = 1 << 6,
-    MEMLCD_HFLIP = 1 << 7
+    MEMLCD_HFLIP = 1 << 7,
+    MEMLCD_ROT270 = 1<< 9,
 };
 
 enum TILE_Flags {
@@ -61,7 +62,7 @@ typedef struct MEMLCD_Handle {
     GPIO_TypeDef *BOOST_Port;
     uint16_t BOOST_Pin;
 
-    uint8_t flags;
+    uint16_t flags;
     uint8_t line_len;
     uint16_t line_ct;
     uint16_t width, height;
