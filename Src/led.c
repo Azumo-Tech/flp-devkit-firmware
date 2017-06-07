@@ -3,6 +3,7 @@
 
 extern DAC_HandleTypeDef hdac;
 static uint8_t brightness;
+static uint16_t LED_Current;
 
 static const uint16_t brightable[256] = {
     740, 800, 860, 920, 990, 1050, 1120, 1200, 1270, 1340, 1420, 1500, 1580, 1670, 1760,
@@ -31,6 +32,7 @@ static const uint16_t brightable[256] = {
 
 void LED_write_current(uint16_t current) {
     if(current > 25000) current = 25000;
+    LED_Current = current;
     uint16_t dac_val = ((uint32_t)current+120)*4481/32768;
     HAL_DAC_SetValue(&hdac, DAC1_CHANNEL_1, DAC_ALIGN_12B_R, dac_val);
 }
@@ -46,6 +48,10 @@ void LED_set_current(uint16_t current) {
          brightable[brightness] < current && brightness < 127;
          brightness++);
     LED_write_current(current);
+}
+
+uint16_t LED_get_current() {
+    return LED_Current;
 }
 
 void LED_set_brightness(uint8_t new_brightness) {

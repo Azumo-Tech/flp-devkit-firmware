@@ -57,6 +57,7 @@ void SysTick_Handler(void);
 void EXTI0_IRQHandler(void);
 void USB_LP_IRQHandler(void);
 void EXTI15_10_IRQHandler(void);
+void DMA2_Channel2_IRQHandler(void);
 
 #ifdef __cplusplus
 }

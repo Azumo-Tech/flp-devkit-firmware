@@ -51,10 +51,13 @@
 #include "usb_device.h"
 
 /* USER CODE BEGIN Includes */
+#include <stdio.h>
 #include "usbd_cdc_if.h"
 #include "memlcd.h"
 #include "extflash.h"
 #include "segfont.h"
+#include "font8x16.xbm"
+#include "font8x16_transp.xbm"
 #include "command.h"
 #include "eeprom.h"
 #include "led.h"
@@ -73,6 +76,7 @@ RTC_HandleTypeDef hrtc;
 SPI_HandleTypeDef hspi1;
 SPI_HandleTypeDef hspi2;
 SPI_HandleTypeDef hspi3;
+DMA_HandleTypeDef hdma_spi3_tx;
 
 TIM_HandleTypeDef htim3;
 
@@ -83,12 +87,14 @@ TIM_HandleTypeDef htim3;
 //#define MEMLCD_MODEL MEMLCD_LS013B7DH05
 //#define MEMLCD_MODEL MEMLCD_LS027B7DH01
 //#define MEMLCD_MODEL MEMLCD_LS032B7DD02
-#define MEMLCD_MODEL MEMLCD_LPM013M126A
-//#define MEMLCD_MODEL MEMLCD_LPM027M128B
+//#define MEMLCD_MODEL MEMLCD_LPM013M126A
+#define MEMLCD_MODEL MEMLCD_LPM027M128B
 //#define MEMLCD_MODEL MEMLCD_LS012B7DH02
 //#define MEMLCD_MODEL MEMLCD_LS044Q7DH01
 #endif
 #define USE_BAT_ICON
+
+static uint8_t tilemap[30*25];
 
 MEMLCD_HandleTypeDef hmemlcd = {
         .model = MEMLCD_MODEL,
@@ -117,7 +123,11 @@ EXTFLASH_HandleTypeDef hflash = {
 
 volatile uint8_t dirty, cur_idx, running, runticks;
 uint8_t batticks, batidx, batdirty;
-
+uint8_t led_message[] = {
+        201,205,205,205,205,205,205,205,205,205,205,205,205,205,205,187,
+        186,' ','I','l','e','d',' ','=',' ','2','0',' ','m','A',' ',186,
+        200,205,205,205,205,205,205,205,205,205,205,205,205,205,205,188,
+};
 
 #define SYSMEM_RESET_VECTOR        0x1ff00004
 #define DFU_RESET_COOKIE           0xDEADBEEF
@@ -131,6 +141,7 @@ static uint32_t *dfu_reset_flag = &_ebss+1;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_DAC_Init(void);
 static void MX_I2C2_Init(void);
 static void MX_RTC_Init(void);
@@ -265,7 +276,8 @@ void SleepyTime() {
         LED_set_current(led_current);
         HAL_GPIO_WritePin(LED_PWR_GPIO_Port, LED_PWR_Pin, 1);
     }
-    EXTFLASH_read_screen(&hflash, EEPROM_Settings->slides[cur_idx].img, (void*)hmemlcd.buffer, MEMLCD_bufsize(&hmemlcd));
+    //EXTFLASH_read_screen(&hflash, EEPROM_Settings->slides[cur_idx].img, (void*)hmemlcd.buffer, MEMLCD_bufsize(&hmemlcd));
+    memcpy(tilemap, "HELLO WORLD!", 12);
     dirty = 1;
     running = 1;
 }
@@ -307,6 +319,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_DAC_Init();
   MX_I2C2_Init();
   MX_RTC_Init();
@@ -388,7 +401,7 @@ int main(void)
               LED_set_current(led_current);
               HAL_GPIO_WritePin(LED_PWR_GPIO_Port, LED_PWR_Pin, 1);
           }
-          EXTFLASH_read_screen(&hflash, EEPROM_Settings->slides[cur_idx].img, (void*)hmemlcd.buffer, MEMLCD_bufsize(&hmemlcd));
+          //EXTFLASH_read_screen(&hflash, EEPROM_Settings->slides[cur_idx].img, (void*)hmemlcd.buffer, MEMLCD_bufsize(&hmemlcd));
           dirty = 1;
       }
       if (running) runticks--;
@@ -419,6 +432,34 @@ int main(void)
           batdirty = 0;
       }
 #endif
+      hmemlcd.tilemaps[0].height = 3;
+      hmemlcd.tilemaps[0].width = 16;
+      hmemlcd.tilemaps[0].tile_size = 1 | 0<<2;
+      hmemlcd.tilemaps[0].scroll_x = (400-48)/2;
+      hmemlcd.tilemaps[0].scroll_y = (240-128)/2;
+      hmemlcd.tilemaps[0].map = led_message;
+      hmemlcd.tilemaps[0].tiles = font8x16_transp_bits;
+      hmemlcd.tilemaps[0].flags = TILE_TRANSPOSE;
+      uint8_t current_ma = LED_get_current() / 1000;
+      led_message[16+10] = '0' + current_ma % 10;
+      current_ma /= 10;
+      led_message[16+9] = (current_ma) ? '0' + current_ma % 10 : ' ';
+
+      hmemlcd.tilemaps[1].height = 10;
+      hmemlcd.tilemaps[1].width = 18;
+      hmemlcd.tilemaps[1].tile_size = 0 | 1<<2;
+      hmemlcd.tilemaps[1].scroll_x = 50;
+      //if(--hmemlcd.tilemaps[1].scroll_y < -3*16) hmemlcd.tilemaps[1].scroll_y = 240;
+      hmemlcd.tilemaps[1].map = tilemap;
+      hmemlcd.tilemaps[1].tiles = font8x16_bits;
+      uint16_t vbat = BATTERY_read_voltage();
+      sprintf(tilemap+18, "VBAT = %04i mV", vbat);
+      if (vbat < 3400) {
+          sprintf(tilemap+36, "LOW BATTERY!");
+      } else {
+          sprintf(tilemap+36, "            ");
+      }
+      dirty = 1;
       CMD_tick();
       while (HAL_GetTick() - looptime < 20); // Cycle time = 20ms
   }
@@ -709,6 +750,21 @@ static void MX_TIM3_Init(void)
   }
 
   HAL_TIM_MspPostInit(&htim3);
+
+}
+
+/** 
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void) 
+{
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA2_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA2_Channel2_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Channel2_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Channel2_IRQn);
 
 }
 

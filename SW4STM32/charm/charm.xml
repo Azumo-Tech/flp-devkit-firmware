@@ -4,6 +4,6 @@
     <name>charm</name>
     <mcuId>stm32l151retx</mcuId>
     <dbgIF>SWD</dbgIF>
-    <dbgDEV>ST-LinkV2</dbgDEV>
+    <dbgDEV>ST-Link</dbgDEV>
   </board>
 </targetDefinitions>

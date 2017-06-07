@@ -22,6 +22,24 @@ enum MEMLCD_Flags {
     MEMLCD_PWR_3V = 0 << 4,
     MEMLCD_MONO = 0 << 5,
     MEMLCD_RGB = 1 << 5,
+    MEMLCD_VFLIP = 1 << 6,
+    MEMLCD_HFLIP = 1 << 7
+};
+
+enum TILE_Flags {
+    TILE_TRANSPOSE = 0x1,
+};
+
+struct TileLayer {
+    uint8_t tile_size;
+    uint8_t width;
+    uint8_t height;
+    uint8_t flags;
+    int16_t scroll_x;
+    int16_t scroll_y;
+    uint8_t *tiles;
+    uint8_t *map;
+    uint8_t *attrmap;
 };
 
 typedef struct MEMLCD_Handle {
@@ -47,7 +65,10 @@ typedef struct MEMLCD_Handle {
     uint8_t line_len;
     uint16_t line_ct;
 
+    uint8_t linebuf[2][256];
     uint8_t buffer[240*150];
+    struct TileLayer tilemaps[3];
+    uint8_t *font;
 } MEMLCD_HandleTypeDef;
 
 void MEMLCD_init(MEMLCD_HandleTypeDef *hmemlcd);
