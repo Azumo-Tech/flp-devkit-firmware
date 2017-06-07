@@ -8,7 +8,7 @@
 static const uint8_t MEMLCD_flags[] = {
         /* Sharp */
         [MEMLCD_LS012B7DH02] = MEMLCD_ADDR_SHARP | MEMLCD_MONO | MEMLCD_PWR_3V,
-        [MEMLCD_LS013B7DH05] = MEMLCD_ADDR_SHARP | MEMLCD_MONO | MEMLCD_PWR_3V,
+        [MEMLCD_LS013B7DH05] = MEMLCD_ADDR_SHARP | MEMLCD_MONO | MEMLCD_PWR_3V | MEMLCD_HFLIP | MEMLCD_VFLIP,
         [MEMLCD_LS027B7DH01] = MEMLCD_ADDR_SHARP | MEMLCD_MONO | MEMLCD_PWR_5V,
         [MEMLCD_LS032B7DD02] = MEMLCD_ADDR_SHARP_LONG | MEMLCD_MONO | MEMLCD_PWR_5V,
         [MEMLCD_LS044Q7DH01] = MEMLCD_ADDR_SHARP | MEMLCD_MONO | MEMLCD_PWR_5V,
@@ -53,6 +53,10 @@ static const uint8_t MEMLCD_line_length[] = {
         [MEMLCD_LPM027M128B] = 400/8*3,
 };
 
+struct MEMLCD_UpdateState {
+    MEMLCD_HandleTypeDef *hmemlcd;
+    uint16_t start, end, line;
+} Upd;
 
 void MEMLCD_BW_writepixel(MEMLCD_HandleTypeDef *hmemlcd, uint16_t x, uint16_t y, uint8_t color) {
     if (color) {
@@ -147,15 +151,15 @@ inline static void MEMLCD_tilelayers_RGB(MEMLCD_HandleTypeDef *hmemlcd, uint16_t
         if (tl.tiles == NULL || tl.map == NULL) continue;
         uint8_t tilewidth = (tl.tile_size & 0x3) + 1;
         uint8_t tileheight = ((tl.tile_size >> 2) & 0x3) + 1;
-        int y = ((hmemlcd->flags & MEMLCD_VFLIP)? (hmemlcd->line_ct - 1) - line : line ) - (tl.scroll_y);
+        int y = ((hmemlcd->flags & MEMLCD_VFLIP)? (hmemlcd->line_ct - 1 - line - tl.scroll_y) : line - tl.scroll_y);
         int ytile = y/(tileheight*8);
         if (y < 0 || ytile >= ((tl.flags & TILE_TRANSPOSE)? tl.width: tl.height)) continue;
         uint8_t ysubtile = (y/8) % tileheight;
         for (int x=0; x < hmemlcd->line_len; x += 3) {
-            int xt = ((hmemlcd->flags & MEMLCD_HFLIP)? (hmemlcd->line_len/3 - 1) - x/3 : x/3) - (tl.scroll_x/8);
+            int xt = ((hmemlcd->flags & MEMLCD_HFLIP)? ((hmemlcd->line_len-x)/3 - 1 - tl.scroll_x/8) : x/3 - tl.scroll_x/8);
             int xtile = xt/tilewidth;
             if (xt < 0) continue;
-            if(xtile >= ((tl.flags & TILE_TRANSPOSE)?  tl.height: tl.width)) break;
+            if(xtile >= ((tl.flags & TILE_TRANSPOSE)?  tl.height: tl.width)) continue;
             uint8_t xsubtile = xt % tilewidth;
 
             uint16_t tilecoord = (tl.flags & TILE_TRANSPOSE)? (ytile + (tl.height-1-xtile)*tl.width) : (ytile*tl.width + xtile);
@@ -176,37 +180,61 @@ inline static void MEMLCD_tilelayers_RGB(MEMLCD_HandleTypeDef *hmemlcd, uint16_t
     }
 }
 
-void MEMLCD_update_area(MEMLCD_HandleTypeDef *hmemlcd, uint16_t start, uint16_t end) {
-    end = (end <= hmemlcd->line_ct)? end : hmemlcd->line_ct;
-    start = (start <= end)? start : end;
-    uint8_t *buffer = hmemlcd->buffer + (hmemlcd->line_len * start);
-    HAL_GPIO_WritePin(hmemlcd->CS_Port, hmemlcd->CS_Pin, 1);
-    for(uint16_t line = start+1; line < end+1; line++) {
-        uint8_t *cmd = &hmemlcd->linebuf[line&1][0];
+void MEMLCD_send_next_line() {
+    if (Upd.hmemlcd == NULL) return;
+    MEMLCD_HandleTypeDef *hmemlcd = Upd.hmemlcd;
+    if (++Upd.line > Upd.end) {
+        uint8_t tail[2];
+        HAL_SPI_Transmit(hmemlcd->hspi, tail, 2, 10);
+        HAL_GPIO_WritePin(hmemlcd->CS_Port, hmemlcd->CS_Pin, 0);
+        Upd.hmemlcd = NULL;
+    } else {
+        uint8_t *cmd = &hmemlcd->linebuf[Upd.line&1][0];
         HAL_GPIO_TogglePin(DBGPIN0_GPIO_Port, DBGPIN0_Pin);
         switch (hmemlcd->flags & 0xF) {
         case MEMLCD_ADDR_SHARP:
             cmd[0] = 1;
-            cmd[1] = line & 0xff;
+            cmd[1] = Upd.line & 0xff;
             break;
         case MEMLCD_ADDR_SHARP_LONG:
-            cmd[0] = 1 | ((line<<6)&0xff);
-            cmd[1] = (line>>2) & 0xff;
+            cmd[0] = 1 | ((Upd.line<<6)&0xff);
+            cmd[1] = (Upd.line>>2) & 0xff;
             break;
         case MEMLCD_ADDR_JDI: {
-            uint32_t rev_addr = __RBIT(line) >> 22;
+            uint32_t rev_addr = __RBIT(Upd.line) >> 22;
             cmd[0] = 1 | ((rev_addr<<6)&0xff);
             cmd[1] = (rev_addr>>2) & 0xff;
             break; }
         }
         memset(&cmd[2], 0xff, hmemlcd->line_len);
-        MEMLCD_tilelayers_RGB(hmemlcd, line-1, &cmd[2]);
-        HAL_GPIO_TogglePin(DBGPIN0_GPIO_Port, DBGPIN0_Pin);
+        memcpy(&cmd[2], &hmemlcd->buffer[hmemlcd->line_len * (Upd.line-1)], hmemlcd->line_len);
+        MEMLCD_tilelayers_RGB(hmemlcd, Upd.line-1, &cmd[2]);
         while(hmemlcd->hspi->State == HAL_SPI_STATE_BUSY_TX);
         HAL_SPI_Transmit_DMA(hmemlcd->hspi, cmd, hmemlcd->line_len+2);
-        buffer += hmemlcd->line_len;
+        HAL_GPIO_TogglePin(DBGPIN0_GPIO_Port, DBGPIN0_Pin);
     }
-    uint8_t tail[2];
-    HAL_SPI_Transmit(hmemlcd->hspi, tail, 2, 10);
-    HAL_GPIO_WritePin(hmemlcd->CS_Port, hmemlcd->CS_Pin, 0);
+}
+
+int MEMLCD_busy() {
+    return (Upd.hmemlcd != NULL);
+}
+
+void MEMLCD_update_area(MEMLCD_HandleTypeDef *hmemlcd, uint16_t start, uint16_t end) {
+    if (Upd.hmemlcd != NULL) return;
+    end = (end <= hmemlcd->line_ct)? end : hmemlcd->line_ct;
+    start = (start <= end)? start : end;
+    HAL_GPIO_WritePin(hmemlcd->CS_Port, hmemlcd->CS_Pin, 1);
+    Upd.start = start+1;
+    Upd.end = end+1;
+    Upd.line = start;
+    Upd.hmemlcd = hmemlcd;
+    MEMLCD_send_next_line();
+}
+
+
+
+void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi){
+    if (Upd.hmemlcd != NULL || hspi == Upd.hmemlcd->hspi) {
+        MEMLCD_send_next_line();
+    }
 }

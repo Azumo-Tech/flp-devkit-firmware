@@ -125,7 +125,7 @@ volatile uint8_t dirty, cur_idx, running, runticks;
 uint8_t batticks, batidx, batdirty;
 uint8_t led_message[] = {
         201,205,205,205,205,205,205,205,205,205,205,205,205,205,205,187,
-        186,' ','I','l','e','d',' ','=',' ','2','0',' ','m','A',' ',186,
+        186,' ','1',' ','L','E','D',' ','2','0','.',' 0','m','A',' ',186,
         200,205,205,205,205,205,205,205,205,205,205,205,205,205,205,188,
 };
 
@@ -276,7 +276,7 @@ void SleepyTime() {
         LED_set_current(led_current);
         HAL_GPIO_WritePin(LED_PWR_GPIO_Port, LED_PWR_Pin, 1);
     }
-    //EXTFLASH_read_screen(&hflash, EEPROM_Settings->slides[cur_idx].img, (void*)hmemlcd.buffer, MEMLCD_bufsize(&hmemlcd));
+    EXTFLASH_read_screen(&hflash, EEPROM_Settings->slides[cur_idx].img, (void*)hmemlcd.buffer, MEMLCD_bufsize(&hmemlcd));
     memcpy(tilemap, "HELLO WORLD!", 12);
     dirty = 1;
     running = 1;
@@ -288,7 +288,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-    uint8_t bt1_tim=0, bt2_tim=0, bt3_tim=0;
+    uint8_t bt1_tim=0, bt2_tim=0, bt3_tim=0, ledmsg_tim;
 
     if (*dfu_reset_flag == DFU_RESET_COOKIE) {
             void (*bootloader)(
@@ -373,8 +373,10 @@ int main(void)
           if (bt2_tim < 250) bt2_tim++;
           if (bt2_tim >= 40 && HAL_GPIO_ReadPin(LED_PWR_GPIO_Port, LED_PWR_Pin)) {
               LED_change_brightness(1);
+              ledmsg_tim = 50;
           }
       } else {
+          if(ledmsg_tim) ledmsg_tim--;
           if (bt2_tim > 3 && bt2_tim < 40)
               HAL_GPIO_TogglePin(LED_PWR_GPIO_Port, LED_PWR_Pin);
           bt2_tim = 0;
@@ -401,7 +403,7 @@ int main(void)
               LED_set_current(led_current);
               HAL_GPIO_WritePin(LED_PWR_GPIO_Port, LED_PWR_Pin, 1);
           }
-          //EXTFLASH_read_screen(&hflash, EEPROM_Settings->slides[cur_idx].img, (void*)hmemlcd.buffer, MEMLCD_bufsize(&hmemlcd));
+          EXTFLASH_read_screen(&hflash, EEPROM_Settings->slides[cur_idx].img, (void*)hmemlcd.buffer, MEMLCD_bufsize(&hmemlcd));
           dirty = 1;
       }
       if (running) runticks--;
@@ -428,38 +430,50 @@ int main(void)
                   }
               }
           }
-          MEMLCD_update_area(&hmemlcd, 8, 24);
           batdirty = 0;
+          dirty = 1;
       }
 #endif
-      hmemlcd.tilemaps[0].height = 3;
-      hmemlcd.tilemaps[0].width = 16;
-      hmemlcd.tilemaps[0].tile_size = 1 | 0<<2;
-      hmemlcd.tilemaps[0].scroll_x = (400-48)/2;
-      hmemlcd.tilemaps[0].scroll_y = (240-128)/2;
-      hmemlcd.tilemaps[0].map = led_message;
-      hmemlcd.tilemaps[0].tiles = font8x16_transp_bits;
-      hmemlcd.tilemaps[0].flags = TILE_TRANSPOSE;
-      uint8_t current_ma = LED_get_current() / 1000;
-      led_message[16+10] = '0' + current_ma % 10;
-      current_ma /= 10;
-      led_message[16+9] = (current_ma) ? '0' + current_ma % 10 : ' ';
-
-      hmemlcd.tilemaps[1].height = 10;
-      hmemlcd.tilemaps[1].width = 18;
-      hmemlcd.tilemaps[1].tile_size = 0 | 1<<2;
-      hmemlcd.tilemaps[1].scroll_x = 50;
-      //if(--hmemlcd.tilemaps[1].scroll_y < -3*16) hmemlcd.tilemaps[1].scroll_y = 240;
-      hmemlcd.tilemaps[1].map = tilemap;
-      hmemlcd.tilemaps[1].tiles = font8x16_bits;
-      uint16_t vbat = BATTERY_read_voltage();
-      sprintf(tilemap+18, "VBAT = %04i mV", vbat);
-      if (vbat < 3400) {
-          sprintf(tilemap+36, "LOW BATTERY!");
-      } else {
-          sprintf(tilemap+36, "            ");
+      if (!MEMLCD_busy()) {
+          if(ledmsg_tim) {
+              hmemlcd.tilemaps[0].height = 3;
+              hmemlcd.tilemaps[0].width = 16;
+              hmemlcd.tilemaps[0].tile_size = 1 | 0<<2;
+              hmemlcd.tilemaps[0].scroll_x = (400-48)/2;
+              hmemlcd.tilemaps[0].scroll_y = (240-128)/2;
+              hmemlcd.tilemaps[0].map = led_message;
+              hmemlcd.tilemaps[0].tiles = font8x16_transp_bits;
+              hmemlcd.tilemaps[0].flags = TILE_TRANSPOSE;
+              uint8_t current_ma = LED_get_current() / 100;
+              led_message[16+11] = '0' + current_ma % 10;
+              current_ma /= 10;
+              led_message[16+9] = '0' + current_ma % 10;
+              current_ma /= 10;
+              led_message[16+8] = (current_ma) ? '0' + current_ma % 10 : ' ';
+              dirty = 1;
+          } else {
+              if (hmemlcd.tilemaps[0].map) {
+                  hmemlcd.tilemaps[0].map = NULL;
+                  dirty = 1;
+              }
+          }
+          /*
+          hmemlcd.tilemaps[1].height = 10;
+          hmemlcd.tilemaps[1].width = 18;
+          hmemlcd.tilemaps[1].tile_size = 0 | 1<<2;
+          hmemlcd.tilemaps[1].scroll_x = 50;
+          //if(--hmemlcd.tilemaps[1].scroll_y < -3*16) hmemlcd.tilemaps[1].scroll_y = 240;
+          hmemlcd.tilemaps[1].map = tilemap;
+          hmemlcd.tilemaps[1].tiles = font8x16_bits;
+          uint16_t vbat = BATTERY_read_voltage();
+          sprintf(tilemap+18, "VBAT = %04i mV", vbat);
+          if (vbat < 3400) {
+              sprintf(tilemap+36, "LOW BATTERY!");
+          } else {
+              sprintf(tilemap+36, "            ");
+          }
+          */
       }
-      dirty = 1;
       CMD_tick();
       while (HAL_GetTick() - looptime < 20); // Cycle time = 20ms
   }
