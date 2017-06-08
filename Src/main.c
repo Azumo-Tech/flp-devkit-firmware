@@ -94,7 +94,9 @@ TIM_HandleTypeDef htim3;
 #endif
 #define USE_BAT_ICON
 
-static uint8_t tilemap[30*25];
+static uint8_t tilemap[1408];
+
+#define printxy(X,Y, ...) sprintf((char *)&tilemap[hmemlcd.tilemaps[0].width*(Y)+(X)], __VA_ARGS__)
 
 MEMLCD_HandleTypeDef hmemlcd = {
         .model = MEMLCD_MODEL,
@@ -121,13 +123,27 @@ EXTFLASH_HandleTypeDef hflash = {
         .stride = (MEMLCD_MODEL == MEMLCD_LPM027M128B|| MEMLCD_MODEL == MEMLCD_LS032B7DD02)? 36*1024: 12*1024
 };
 
-volatile uint8_t dirty, cur_idx, running, runticks;
+volatile uint8_t dirty, cur_idx, running;
+uint16_t runticks, vbat_avg;
 uint8_t batticks, batidx, batdirty;
 uint8_t led_message[] = {
         201,205,205,205,205,205,205,205,205,205,205,205,205,205,205,187,
         186,' ','1',' ','L','E','D',' ','2','0','.','0','m','A',' ',186,
         200,205,205,205,205,205,205,205,205,205,205,205,205,205,205,188,
 };
+
+static enum BoardState {
+    STATE_OFF,
+    STATE_SPLASH_INIT,
+    STATE_SPLASH,
+    STATE_LOW_BATT_INIT,
+    STATE_LOW_BATT,
+    STATE_CHARGING_INIT,
+    STATE_CHARGING,
+    STATE_SLIDESHOW_INIT,
+    STATE_SLIDESHOW_LOAD,
+    STATE_SLIDESHOW_WAIT,
+} State;
 
 #define SYSMEM_RESET_VECTOR        0x1ff00004
 #define DFU_RESET_COOKIE           0xDEADBEEF
@@ -246,7 +262,8 @@ uint16_t BATTERY_read_voltage() {
     return vbat;
 }
 
-void SleepyTime() {
+int SleepyTime() {
+    int ret = 0;
     HAL_GPIO_WritePin(LED_PWR_GPIO_Port, LED_PWR_Pin, 0); // Turn off LED
     HAL_DAC_Stop(&hdac, DAC_CHANNEL_1); // Stop LED DAC
     MEMLCD_power_off(&hmemlcd);
@@ -259,6 +276,7 @@ void SleepyTime() {
     while (HAL_GPIO_ReadPin(BT1_GPIO_Port, BT1_Pin) && HAL_GPIO_ReadPin(N_PGOOD_GPIO_Port, N_PGOOD_Pin)) {
         HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_SLEEPENTRY_WFI);
     }
+    if (!HAL_GPIO_ReadPin(BT1_GPIO_Port, BT1_Pin)) ret = 1;
     SystemClock_Config();
     HAL_GPIO_WritePin(USB_DISCONNECT_GPIO_Port, USB_DISCONNECT_Pin, 1);
     HAL_Delay(10);
@@ -267,7 +285,7 @@ void SleepyTime() {
     EXTFLASH_power_up(&hflash);
     HAL_DAC_Start(&hdac, DAC_CHANNEL_1);
     MEMLCD_init(&hmemlcd);
-
+/*
     cur_idx = 0;
     LED_set_current(EEPROM_Settings->default_led_current);
     runticks = EEPROM_Settings->slides[cur_idx].delay ? EEPROM_Settings->slides[cur_idx].delay : EEPROM_Settings->default_delay;
@@ -277,9 +295,10 @@ void SleepyTime() {
         HAL_GPIO_WritePin(LED_PWR_GPIO_Port, LED_PWR_Pin, 1);
     }
     EXTFLASH_read_screen(&hflash, EEPROM_Settings->slides[cur_idx].img, (void*)hmemlcd.buffer, MEMLCD_bufsize(&hmemlcd));
-    memcpy(tilemap, "HELLO WORLD!", 12);
     dirty = 1;
     running = 1;
+*/
+    return ret;
 }
 
 /* USER CODE END 0 */
@@ -345,23 +364,42 @@ int main(void)
       }
       HAL_FLASHEx_DATAEEPROM_Lock();
   }
-  hmemlcd.tilemaps[0].height = 3;
-  hmemlcd.tilemaps[0].width = 16;
+  hmemlcd.tilemaps[1].height = 3;
+  hmemlcd.tilemaps[1].width = 16;
   if (hmemlcd.flags & MEMLCD_ROT270) {
+      // Background text
+      hmemlcd.tilemaps[0].height = hmemlcd.width/16;
+      hmemlcd.tilemaps[0].width = hmemlcd.height/8;
       hmemlcd.tilemaps[0].tile_size = 1 | 0<<2;
-      hmemlcd.tilemaps[0].scroll_x = (hmemlcd.width-48)/2;
-      hmemlcd.tilemaps[0].scroll_y = (hmemlcd.height-128)/2;
+      hmemlcd.tilemaps[0].scroll_x = 0;
+      hmemlcd.tilemaps[0].scroll_y = 0;
       hmemlcd.tilemaps[0].tiles = font8x16_transp_bits;
       hmemlcd.tilemaps[0].flags = TILE_TRANSPOSE;
+      // Overlay (for LED current)
+      hmemlcd.tilemaps[1].tile_size = 1 | 0<<2;
+      hmemlcd.tilemaps[1].scroll_x = (hmemlcd.width-48)/2;
+      hmemlcd.tilemaps[1].scroll_y = (hmemlcd.height-128)/2;
+      hmemlcd.tilemaps[1].tiles = font8x16_transp_bits;
+      hmemlcd.tilemaps[1].flags = TILE_TRANSPOSE;
   } else {
+      // Background text
+      hmemlcd.tilemaps[0].height = hmemlcd.height/16;
+      hmemlcd.tilemaps[0].width = hmemlcd.width/8;
       hmemlcd.tilemaps[0].tile_size = 0 | 1<<2;
-      hmemlcd.tilemaps[0].scroll_x = (hmemlcd.width-128)/2;
-      hmemlcd.tilemaps[0].scroll_y = (hmemlcd.height-48)/2;
+      hmemlcd.tilemaps[0].scroll_x = 0;
+      hmemlcd.tilemaps[0].scroll_y = 0;
       hmemlcd.tilemaps[0].tiles = font8x16_bits;
       hmemlcd.tilemaps[0].flags = 0;
+      // Overlay (for LED current)
+      hmemlcd.tilemaps[1].tile_size = 0 | 1<<2;
+      hmemlcd.tilemaps[1].scroll_x = (hmemlcd.width-128)/2;
+      hmemlcd.tilemaps[1].scroll_y = (hmemlcd.height-48)/2;
+      hmemlcd.tilemaps[1].tiles = font8x16_bits;
+      hmemlcd.tilemaps[1].flags = 0;
   }
-  hmemlcd.tilemaps[0].map = NULL;
-  SleepyTime();
+  hmemlcd.tilemaps[0].map = tilemap;
+  hmemlcd.tilemaps[1].map = NULL;
+  State = STATE_OFF;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -372,16 +410,12 @@ int main(void)
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-      if (dirty){
+      if (dirty && !MEMLCD_busy()){
           MEMLCD_update_area(&hmemlcd, 0, -1);
           dirty = 0;
       }
       if (!HAL_GPIO_ReadPin(BT1_GPIO_Port, BT1_Pin)) {
           if (bt1_tim < 250) bt1_tim++;
-          if (bt1_tim == 100) {
-              bt1_tim = 250;
-              SleepyTime();
-          }
       } else {
           bt1_tim = 0;
       }
@@ -411,8 +445,121 @@ int main(void)
           }
           bt3_tim = 0;
       }
-      if (!runticks) {
-          cur_idx = (cur_idx+1) % (EEPROM_Settings->slide_count);
+      switch (State) {
+      case STATE_OFF:
+          while (MEMLCD_busy());
+          memset(hmemlcd.buffer, 0, MEMLCD_bufsize(&hmemlcd));
+          if (SleepyTime() == 1) { // Woke up with button
+              State = STATE_SPLASH_INIT;
+          } else { // Woke up with USB
+              State = STATE_CHARGING_INIT;
+          }
+          break;
+
+      case STATE_CHARGING_INIT:
+          if (!MEMLCD_busy()) {
+              memset(tilemap, 0, sizeof(tilemap));
+              printxy(1, 1, "USB CONNECTED");
+              printxy(1, 2, "CHARGING...");
+              printxy(1, 3, "PRESS POWER");
+              printxy(1, 4, "TO START");
+              dirty = 1;
+              State = STATE_CHARGING;
+              runticks = 0;
+          }
+          break;
+      case STATE_CHARGING:
+          if (runticks < 50) {
+              runticks++;
+              break;
+          }
+          if (bt1_tim) State = STATE_SPLASH_INIT;
+          if(!HAL_GPIO_ReadPin(N_PGOOD_GPIO_Port, N_PGOOD_Pin) && HAL_GPIO_ReadPin(N_CHARGING_GPIO_Port, N_CHARGING_Pin)) {
+              State = STATE_SPLASH_INIT; // If charging is done
+          }
+          if (HAL_GPIO_ReadPin(N_PGOOD_GPIO_Port, N_PGOOD_Pin)) {
+              State = STATE_OFF; // If disconnected
+          }
+          break;
+      case STATE_SPLASH_INIT:
+          LED_set_current(20);
+          HAL_GPIO_WritePin(LED_PWR_GPIO_Port, LED_PWR_Pin, 1);
+          memset(tilemap, 0, sizeof(tilemap));
+          printxy(1,1,"FLEx Lighting");
+          printxy(1,2,"Charm V3.0");
+          printxy(1,3,"FW Ver %i", FIRMWARE_VERSION);
+          vbat_avg = BATTERY_read_voltage();
+          printxy(1,5,"Vbat = %04i", vbat_avg);
+          dirty = 1;
+          runticks = 0;
+          State = STATE_SPLASH;
+          break;
+      case STATE_SPLASH:
+          if (runticks < 16) {
+              vbat_avg = (vbat_avg + BATTERY_read_voltage()) / 2;
+          }
+          printxy(1,5,"Vbat = %04i", vbat_avg);
+          dirty = 1;
+          if (runticks == 20) HAL_GPIO_WritePin(LED_PWR_GPIO_Port, LED_PWR_Pin, 0);
+          if (runticks >= 100) {
+              if (vbat_avg > 3300 || !HAL_GPIO_ReadPin(N_PGOOD_GPIO_Port, N_PGOOD_Pin)) {
+                  State = STATE_SLIDESHOW_INIT;
+              } else {
+                  State = STATE_LOW_BATT_INIT;
+              }
+          }
+          runticks++;
+          break;
+
+      case STATE_LOW_BATT_INIT:
+          memset(tilemap, 0, sizeof(tilemap));
+          printxy(1, 1, "LOW BATTERY!");
+          printxy(1, 2, "PLEASE CONNECT");
+          printxy(1, 3, "USB CHARGER");
+          dirty = 1;
+          runticks = 0;
+          State = STATE_LOW_BATT;
+          break;
+      case STATE_LOW_BATT:
+          if (runticks >= 300 || !HAL_GPIO_ReadPin(N_PGOOD_GPIO_Port, N_PGOOD_Pin))
+              State = STATE_OFF;
+          runticks++;
+          break;
+      case STATE_SLIDESHOW_INIT:
+          memset(tilemap, 0, sizeof(tilemap));
+          cur_idx = 0;
+          running = 1;
+          LED_set_current(EEPROM_Settings->default_led_current);
+          State = STATE_SLIDESHOW_LOAD;
+          break;
+      case STATE_SLIDESHOW_WAIT:
+          if (bt1_tim >= 100) {
+              State = STATE_OFF;
+          }
+          if (!runticks) {
+              cur_idx = (cur_idx+1) % (EEPROM_Settings->slide_count);
+              State = STATE_SLIDESHOW_LOAD;
+          }
+          if (running) runticks--;
+          if (!MEMLCD_busy()) {
+              if(ledmsg_tim) {
+                  hmemlcd.tilemaps[1].map = led_message;
+                  uint8_t current_ma = LED_get_current() / 100;
+                  led_message[16+11] = '0' + current_ma % 10;
+                  current_ma /= 10;
+                  led_message[16+9] = '0' + current_ma % 10;
+                  current_ma /= 10;
+                  led_message[16+8] = (current_ma) ? '0' + current_ma % 10 : ' ';
+                  dirty = 1;
+              } else {
+                  if (hmemlcd.tilemaps[1].map) {
+                      hmemlcd.tilemaps[1].map = NULL;
+                      dirty = 1;
+                  }
+              }
+          }
+          break;
+      case STATE_SLIDESHOW_LOAD:
           runticks = EEPROM_Settings->slides[cur_idx].delay ? EEPROM_Settings->slides[cur_idx].delay : EEPROM_Settings->default_delay;
           uint16_t led_current = EEPROM_Settings->slides[cur_idx].led_current;
           if (led_current) {
@@ -421,9 +568,14 @@ int main(void)
           }
           EXTFLASH_read_screen(&hflash, EEPROM_Settings->slides[cur_idx].img, (void*)hmemlcd.buffer, MEMLCD_bufsize(&hmemlcd));
           dirty = 1;
+          State = STATE_SLIDESHOW_WAIT;
+          break;
+      default:
+          State = STATE_OFF;
+          break;
       }
-      if (running) runticks--;
-#ifdef USE_BAT_ICON
+
+#ifdef _USE_BAT_ICON
       if (HAL_GPIO_ReadPin(N_CHARGING_GPIO_Port, N_CHARGING_Pin) == 0) {
           if (batticks++ > 20 || dirty) {
               batticks=0;
@@ -450,39 +602,7 @@ int main(void)
           dirty = 1;
       }
 #endif
-      if (!MEMLCD_busy()) {
-          if(ledmsg_tim) {
-              hmemlcd.tilemaps[0].map = led_message;
-              uint8_t current_ma = LED_get_current() / 100;
-              led_message[16+11] = '0' + current_ma % 10;
-              current_ma /= 10;
-              led_message[16+9] = '0' + current_ma % 10;
-              current_ma /= 10;
-              led_message[16+8] = (current_ma) ? '0' + current_ma % 10 : ' ';
-              dirty = 1;
-          } else {
-              if (hmemlcd.tilemaps[0].map) {
-                  hmemlcd.tilemaps[0].map = NULL;
-                  dirty = 1;
-              }
-          }
-          /*
-          hmemlcd.tilemaps[1].height = 10;
-          hmemlcd.tilemaps[1].width = 18;
-          hmemlcd.tilemaps[1].tile_size = 0 | 1<<2;
-          hmemlcd.tilemaps[1].scroll_x = 50;
-          //if(--hmemlcd.tilemaps[1].scroll_y < -3*16) hmemlcd.tilemaps[1].scroll_y = 240;
-          hmemlcd.tilemaps[1].map = tilemap;
-          hmemlcd.tilemaps[1].tiles = font8x16_bits;
-          uint16_t vbat = BATTERY_read_voltage();
-          sprintf(tilemap+18, "VBAT = %04i mV", vbat);
-          if (vbat < 3400) {
-              sprintf(tilemap+36, "LOW BATTERY!");
-          } else {
-              sprintf(tilemap+36, "            ");
-          }
-          */
-      }
+
       CMD_tick();
       while (HAL_GetTick() - looptime < 20); // Cycle time = 20ms
   }
