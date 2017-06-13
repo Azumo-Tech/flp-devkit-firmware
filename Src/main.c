@@ -84,11 +84,11 @@ TIM_HandleTypeDef htim3;
 /* Private variables ---------------------------------------------------------*/
 
 #ifndef MEMLCD_MODEL
-#define MEMLCD_MODEL MEMLCD_LS013B7DH05
+//#define MEMLCD_MODEL MEMLCD_LS013B7DH05
 //#define MEMLCD_MODEL MEMLCD_LS027B7DH01
 //#define MEMLCD_MODEL MEMLCD_LS032B7DD02
 //#define MEMLCD_MODEL MEMLCD_LPM013M126A
-//#define MEMLCD_MODEL MEMLCD_LPM027M128B
+#define MEMLCD_MODEL MEMLCD_LPM027M128B
 //#define MEMLCD_MODEL MEMLCD_LS012B7DH02
 //#define MEMLCD_MODEL MEMLCD_LS044Q7DH01
 #endif
@@ -489,7 +489,7 @@ int main(void)
           printxy(1,2,"Charm V3.0");
           printxy(1,3,"FW Ver %i", FIRMWARE_VERSION);
           vbat_avg = BATTERY_read_voltage();
-          printxy(1,5,"Vbat = %04i", vbat_avg);
+          printxy(1,5,"Vbat = %04i mV", vbat_avg);
           dirty = 1;
           runticks = 0;
           State = STATE_SPLASH;
@@ -498,17 +498,19 @@ int main(void)
           if (runticks < 16) {
               vbat_avg = (vbat_avg + BATTERY_read_voltage()) / 2;
           }
-          printxy(1,5,"Vbat = %04i", vbat_avg);
+          printxy(1,5,"Vbat = %04i mV", vbat_avg);
           dirty = 1;
           if (runticks == 20) HAL_GPIO_WritePin(LED_PWR_GPIO_Port, LED_PWR_Pin, 0);
-          if (runticks >= 100) {
+          if (runticks >= 100 && bt1_tim == 0) {
               if (vbat_avg > 3300 || !HAL_GPIO_ReadPin(N_PGOOD_GPIO_Port, N_PGOOD_Pin)) {
                   State = STATE_SLIDESHOW_INIT;
               } else {
                   State = STATE_LOW_BATT_INIT;
               }
           }
-          runticks++;
+          if (runticks < 150) {
+              runticks++;
+          }
           break;
 
       case STATE_LOW_BATT_INIT:
