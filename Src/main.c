@@ -502,7 +502,7 @@ int main(void)
           dirty = 1;
           if (runticks == 20) HAL_GPIO_WritePin(LED_PWR_GPIO_Port, LED_PWR_Pin, 0);
           if (runticks >= 100 && bt1_tim == 0) {
-              if (vbat_avg > 3300 || !HAL_GPIO_ReadPin(N_PGOOD_GPIO_Port, N_PGOOD_Pin)) {
+              if (vbat_avg > 3300 || vbat_avg < 1500 || !HAL_GPIO_ReadPin(N_PGOOD_GPIO_Port, N_PGOOD_Pin)) {
                   State = STATE_SLIDESHOW_INIT;
               } else {
                   State = STATE_LOW_BATT_INIT;
