@@ -197,19 +197,22 @@ void CMD_tick() {
                     size_t rlen = 0;
                     switch(IntArgv[0]+'@') {
                     case 'N': /* Number of slides */
-                        rlen = snprintf(response, 32, "slides = %i\n", EEPROM_Settings->slide_count);
+                        rlen = snprintf(response, 32, "slides = %i\r\n", EEPROM_Settings->slide_count);
                         break;
                     case 'D': /* Default Delay */
-                        rlen = snprintf(response, 32, "delay = %i\n", EEPROM_Settings->default_delay);
+                        rlen = snprintf(response, 32, "delay = %i\r\n", EEPROM_Settings->default_delay);
                         break;
                     case 'C': /* Default LED Current */
-                        rlen = snprintf(response, 32, "current = %i\n", EEPROM_Settings->default_led_current);
+                        rlen = snprintf(response, 32, "current = %i\r\n", EEPROM_Settings->default_led_current);
                         break;
                     case 'M': /* Display Model */
                         rlen = snprintf(response, 32, "display_model = %i\r\n", hmemlcd.model);
                         break;
                     case 'B':
                         rlen = snprintf(response, 32, "vbat = %i\r\n", BATTERY_read_voltage());
+                        break;
+                    case 'V':
+                        rlen = snprintf(response, 32, "version = %i\r\n", FIRMWARE_VERSION);
                         break;
                     default:
                         rlen = snprintf(response, 32, "UNKNOWN VARIABLE\n");
@@ -225,19 +228,19 @@ void CMD_tick() {
                         HAL_FLASHEx_DATAEEPROM_Unlock();
                         HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, (size_t)&EEPROM_Settings->slide_count, IntArgv[1]);
                         HAL_FLASHEx_DATAEEPROM_Lock();
-                        rlen = snprintf(response, 32, "!slides = %i\n", IntArgv[1]);
+                        rlen = snprintf(response, 32, "!slides = %i\r\n", IntArgv[1]);
                         break;
                     case 'D': /* Default Delay */
                         HAL_FLASHEx_DATAEEPROM_Unlock();
                         HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, (size_t)&EEPROM_Settings->default_delay, IntArgv[1]);
                         HAL_FLASHEx_DATAEEPROM_Lock();
-                        rlen = snprintf(response, 32, "!delay = %i\n", IntArgv[1]);
+                        rlen = snprintf(response, 32, "!delay = %i\r\n", IntArgv[1]);
                         break;
                     case 'C': /* Default led current */
                         HAL_FLASHEx_DATAEEPROM_Unlock();
                         HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_HALFWORD, (size_t)&EEPROM_Settings->default_led_current, IntArgv[1]);
                         HAL_FLASHEx_DATAEEPROM_Lock();
-                        rlen = snprintf(response, 32, "!current = %i\n", IntArgv[1]);
+                        rlen = snprintf(response, 32, "!current = %i\r\n", IntArgv[1]);
                         break;
                     case 'M':
                         if (IntArgv[1] >= 0 && IntArgv[1] < MEMLCD_MAX) {
@@ -245,15 +248,15 @@ void CMD_tick() {
                             MEMLCD_init(&hmemlcd);
                             rlen = snprintf(response, 32, "!display_model = %i\r\n", IntArgv[1]);
                         } else {
-                            rlen = snprintf(response, 32, "Unknown Model %i\n", IntArgv[1]);
+                            rlen = snprintf(response, 32, "Unknown Model %i\r\n", IntArgv[1]);
                         }
                         break;
                     case 0xCAFEFF2D:
                         *dfu_reset_flag = IntArgv[1];
-                        rlen = snprintf(response, 32, "!dfu_flag = %X\n", IntArgv[1]);
+                        rlen = snprintf(response, 32, "!dfu_flag = %X\r\n", IntArgv[1]);
                         break;
                     default:
-                        rlen = snprintf(response, 32, "Unknown variable %i = %i\n", IntArgv[0], IntArgv[1]);
+                        rlen = snprintf(response, 32, "Unknown variable %i = %i\r\n", IntArgv[0], IntArgv[1]);
                         break;
                     }
                     while (CDC_Transmit_FS((uint8_t*)response, rlen) == USBD_BUSY);
