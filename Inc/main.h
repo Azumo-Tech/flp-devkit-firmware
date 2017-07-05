@@ -112,7 +112,7 @@
 #define LED_PWR_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
-#define FIRMWARE_VERSION 20170609
+#define FIRMWARE_VERSION 20170705
 
 /* USER CODE END Private defines */
 

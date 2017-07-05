@@ -86,6 +86,8 @@ void MEMLCD_BW_blitline(MEMLCD_HandleTypeDef *hmemlcd, uint16_t x, uint16_t y, u
 
 int MEMLCD_busy();
 
+char* MEMLCD_get_model_name(MEMLCD_HandleTypeDef *hmemlcd);
+
 static inline int MEMLCD_bufsize(MEMLCD_HandleTypeDef *hmemlcd) {
     return hmemlcd->line_ct * hmemlcd->line_len;
 }

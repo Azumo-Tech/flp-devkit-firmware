@@ -5,6 +5,18 @@
 #include <string.h>
 #include <stdint.h>
 
+static const char* MEMLCD_model_names[MEMLCD_MAX] = {
+    /* Sharp */
+    "LS012B7DH02",
+    "LS013B7DH05",
+    "LS027B7DH01",
+    "LS032B7DD02",
+    "LS044Q7DH01",
+    /* JDI */
+    "LPM013M126A",
+    "LPM027M128B"
+};
+
 static const uint16_t MEMLCD_flags[] = {
         /* Sharp */
         [MEMLCD_LS012B7DH02] = MEMLCD_ADDR_SHARP | MEMLCD_MONO | MEMLCD_PWR_3V,
@@ -245,7 +257,9 @@ void MEMLCD_update_area(MEMLCD_HandleTypeDef *hmemlcd, uint16_t start, uint16_t 
     MEMLCD_send_next_line();
 }
 
-
+char* MEMLCD_get_model_name(MEMLCD_HandleTypeDef *hmemlcd) {
+    return MEMLCD_model_names[hmemlcd->model];
+}
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi){
     if (Upd.hmemlcd != NULL || hspi == Upd.hmemlcd->hspi) {

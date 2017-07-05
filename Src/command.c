@@ -206,7 +206,7 @@ void CMD_tick() {
                         rlen = snprintf(response, 32, "current = %i\r\n", EEPROM_Settings->default_led_current);
                         break;
                     case 'M': /* Display Model */
-                        rlen = snprintf(response, 32, "display_model = %i\r\n", hmemlcd.model);
+                        rlen = snprintf(response, 32, "display_model = %s\r\n", MEMLCD_get_model_name(&hmemlcd));
                         break;
                     case 'B':
                         rlen = snprintf(response, 32, "vbat = %i\r\n", BATTERY_read_voltage());
@@ -242,6 +242,7 @@ void CMD_tick() {
                         HAL_FLASHEx_DATAEEPROM_Lock();
                         rlen = snprintf(response, 32, "!current = %i\r\n", IntArgv[1]);
                         break;
+#ifdef SETTABLE_MODEL
                     case 'M':
                         if (IntArgv[1] >= 0 && IntArgv[1] < MEMLCD_MAX) {
                             hmemlcd.model = IntArgv[1];
@@ -251,6 +252,7 @@ void CMD_tick() {
                             rlen = snprintf(response, 32, "Unknown Model %i\r\n", IntArgv[1]);
                         }
                         break;
+#endif
                     case 0xCAFEFF2D:
                         *dfu_reset_flag = IntArgv[1];
                         rlen = snprintf(response, 32, "!dfu_flag = %X\r\n", IntArgv[1]);
