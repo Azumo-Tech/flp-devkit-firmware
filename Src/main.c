@@ -85,10 +85,10 @@ TIM_HandleTypeDef htim3;
 
 #ifndef MEMLCD_MODEL
 //#define MEMLCD_MODEL MEMLCD_LS013B7DH05
-//#define MEMLCD_MODEL MEMLCD_LS027B7DH01
+#define MEMLCD_MODEL MEMLCD_LS027B7DH01
 //#define MEMLCD_MODEL MEMLCD_LS032B7DD02
 //#define MEMLCD_MODEL MEMLCD_LPM013M126A
-#define MEMLCD_MODEL MEMLCD_LPM027M128B
+//#define MEMLCD_MODEL MEMLCD_LPM027M128B
 //#define MEMLCD_MODEL MEMLCD_LS012B7DH02
 //#define MEMLCD_MODEL MEMLCD_LS044Q7DH01
 #endif
@@ -125,7 +125,7 @@ EXTFLASH_HandleTypeDef hflash = {
 
 volatile uint8_t dirty, cur_idx, running;
 uint16_t runticks, vbat_avg;
-uint8_t batticks, batidx, batdirty;
+uint8_t batticks, batidx, batdirty, b_ticks;
 uint8_t led_message[] = {
         201,205,205,205,205,205,205,205,205,205,205,205,205,205,205,187,
         186,' ','1',' ','L','E','D',' ','2','0','.','0','m','A',' ',186,
@@ -422,7 +422,11 @@ int main(void)
       if (!HAL_GPIO_ReadPin(BT2_GPIO_Port, BT2_Pin)) {
           if (bt2_tim < 250) bt2_tim++;
           if (bt2_tim >= 40 && HAL_GPIO_ReadPin(LED_PWR_GPIO_Port, LED_PWR_Pin)) {
-              LED_change_brightness(1);
+              b_ticks++;
+              if (b_ticks >= 4) {
+                  LED_change_brightness(1);
+                  b_ticks = 0;
+              }
               ledmsg_tim = 50;
           }
       } else {
