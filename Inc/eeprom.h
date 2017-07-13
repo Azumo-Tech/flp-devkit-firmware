@@ -17,8 +17,9 @@ struct EEPROMSettings {
     volatile uint16_t default_led_current;
     volatile uint8_t default_delay;
     volatile uint8_t slide_count;
-    volatile int16_t batt_cutoff;
-    volatile uint16_t flags;
+    volatile uint8_t lcd_model;
+    volatile uint8_t flags;
+    volatile uint8_t pad[2];
     volatile struct Slide slides[64];
 };
 

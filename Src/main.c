@@ -83,23 +83,11 @@ TIM_HandleTypeDef htim3;
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 
-#ifndef MEMLCD_MODEL
-//#define MEMLCD_MODEL MEMLCD_LS013B7DH05
-#define MEMLCD_MODEL MEMLCD_LS027B7DH01
-//#define MEMLCD_MODEL MEMLCD_LS032B7DD02
-//#define MEMLCD_MODEL MEMLCD_LPM013M126A
-//#define MEMLCD_MODEL MEMLCD_LPM027M128B
-//#define MEMLCD_MODEL MEMLCD_LS012B7DH02
-//#define MEMLCD_MODEL MEMLCD_LS044Q7DH01
-#endif
-#define USE_BAT_ICON
-
 static uint8_t tilemap[1408];
 
 #define printxy(X,Y, ...) sprintf((char *)&tilemap[hmemlcd.tilemaps[0].width*(Y)+(X)], __VA_ARGS__)
 
 MEMLCD_HandleTypeDef hmemlcd = {
-        .model = MEMLCD_MODEL,
         .hspi = &hspi3,
         .htim = &htim3,
         .tim_ch = TIM_CHANNEL_2,
@@ -120,7 +108,6 @@ EXTFLASH_HandleTypeDef hflash = {
         .CS_Port = MEM_CS_GPIO_Port,
         .CS_Pin = MEM_CS_Pin,
         .size = 2*1024*1024,
-        .stride = (MEMLCD_MODEL == MEMLCD_LPM027M128B|| MEMLCD_MODEL == MEMLCD_LS032B7DD02)? 36*1024: 12*1024
 };
 
 volatile uint8_t dirty, cur_idx, running;
@@ -285,20 +272,67 @@ int SleepyTime() {
     EXTFLASH_power_up(&hflash);
     HAL_DAC_Start(&hdac, DAC_CHANNEL_1);
     MEMLCD_init(&hmemlcd);
-/*
-    cur_idx = 0;
-    LED_set_current(EEPROM_Settings->default_led_current);
-    runticks = EEPROM_Settings->slides[cur_idx].delay ? EEPROM_Settings->slides[cur_idx].delay : EEPROM_Settings->default_delay;
-    uint16_t led_current = EEPROM_Settings->slides[cur_idx].led_current;
-    if (led_current) {
-        LED_set_current(led_current);
-        HAL_GPIO_WritePin(LED_PWR_GPIO_Port, LED_PWR_Pin, 1);
-    }
-    EXTFLASH_read_screen(&hflash, EEPROM_Settings->slides[cur_idx].img, (void*)hmemlcd.buffer, MEMLCD_bufsize(&hmemlcd));
-    dirty = 1;
-    running = 1;
-*/
     return ret;
+}
+
+
+void BSP_init() {
+    if (EEPROM_Settings->version != FIRMWARE_VERSION) {
+        HAL_FLASHEx_DATAEEPROM_Unlock();
+        HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_WORD, (size_t)&EEPROM_Settings->version, FIRMWARE_VERSION);
+        HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, (size_t)&EEPROM_Settings->default_delay, 150);
+        HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, (size_t)&EEPROM_Settings->slide_count, 10);
+        HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_HALFWORD, (size_t)&EEPROM_Settings->default_led_current, 20000);
+        HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, (size_t)&EEPROM_Settings->lcd_model, 0);
+        HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, (size_t)&EEPROM_Settings->flags, 0);
+        for (uint8_t i=0; i<64; i++) {
+            HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, (size_t)&EEPROM_Settings->slides[i].delay, 0);
+            HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, (size_t)&EEPROM_Settings->slides[i].img, i);
+            HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_HALFWORD, (size_t)&EEPROM_Settings->slides[i].led_current, 0);
+        }
+        HAL_FLASHEx_DATAEEPROM_Lock();
+    }
+    hmemlcd.model = EEPROM_Settings->lcd_model;
+    MEMLCD_init(&hmemlcd);
+    // Set the flash image stride to be able to hold the whole screen, rounded up to a whole number of sectors.
+    hflash.stride = 4096 * ((MEMLCD_bufsize(&hmemlcd) + 4095 ) / 4096);
+    // Set up the default tile maps, common to both orientations
+    // Background text
+    hmemlcd.tilemaps[0].scroll_x = 0;
+    hmemlcd.tilemaps[0].scroll_y = 0;
+    // Overlay (for LED current)
+    hmemlcd.tilemaps[1].height = 3;
+    hmemlcd.tilemaps[1].width = 16;
+    // Set up attributes that depend on orientation
+    if (hmemlcd.flags & MEMLCD_ROT270) {
+        // Background text
+        hmemlcd.tilemaps[0].height = hmemlcd.width/16;
+        hmemlcd.tilemaps[0].width = hmemlcd.height/8;
+        hmemlcd.tilemaps[0].tile_size = 1 | 0<<2;
+        hmemlcd.tilemaps[0].tiles = font8x16_transp_bits;
+        hmemlcd.tilemaps[0].flags = TILE_TRANSPOSE;
+        // Overlay (for LED current)
+        hmemlcd.tilemaps[1].tile_size = 1 | 0<<2;
+        hmemlcd.tilemaps[1].scroll_x = (hmemlcd.width-48)/2;
+        hmemlcd.tilemaps[1].scroll_y = (hmemlcd.height-128)/2;
+        hmemlcd.tilemaps[1].tiles = font8x16_transp_bits;
+        hmemlcd.tilemaps[1].flags = TILE_TRANSPOSE;
+    } else {
+        // Background text
+        hmemlcd.tilemaps[0].height = hmemlcd.height/16;
+        hmemlcd.tilemaps[0].width = hmemlcd.width/8;
+        hmemlcd.tilemaps[0].tile_size = 0 | 1<<2;
+        hmemlcd.tilemaps[0].tiles = font8x16_bits;
+        hmemlcd.tilemaps[0].flags = 0;
+        // Overlay (for LED current)
+        hmemlcd.tilemaps[1].tile_size = 0 | 1<<2;
+        hmemlcd.tilemaps[1].scroll_x = (hmemlcd.width-128)/2;
+        hmemlcd.tilemaps[1].scroll_y = (hmemlcd.height-48)/2;
+        hmemlcd.tilemaps[1].tiles = font8x16_bits;
+        hmemlcd.tilemaps[1].flags = 0;
+    }
+    hmemlcd.tilemaps[0].map = tilemap;
+    hmemlcd.tilemaps[1].map = NULL;
 }
 
 /* USER CODE END 0 */
@@ -350,55 +384,7 @@ int main(void)
   MX_ADC_Init();
 
   /* USER CODE BEGIN 2 */
-  MEMLCD_init(&hmemlcd);
-  if (EEPROM_Settings->version != FIRMWARE_VERSION) {
-      HAL_FLASHEx_DATAEEPROM_Unlock();
-      HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_WORD, (size_t)&EEPROM_Settings->version, FIRMWARE_VERSION);
-      HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, (size_t)&EEPROM_Settings->default_delay, 150);
-      HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, (size_t)&EEPROM_Settings->slide_count, 10);
-      HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_HALFWORD, (size_t)&EEPROM_Settings->default_led_current, 20000);
-      for (uint8_t i=0; i<64; i++) {
-          HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, (size_t)&EEPROM_Settings->slides[i].delay, 0);
-          HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, (size_t)&EEPROM_Settings->slides[i].img, i);
-          HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_HALFWORD, (size_t)&EEPROM_Settings->slides[i].led_current, 0);
-      }
-      HAL_FLASHEx_DATAEEPROM_Lock();
-  }
-  hmemlcd.tilemaps[1].height = 3;
-  hmemlcd.tilemaps[1].width = 16;
-  if (hmemlcd.flags & MEMLCD_ROT270) {
-      // Background text
-      hmemlcd.tilemaps[0].height = hmemlcd.width/16;
-      hmemlcd.tilemaps[0].width = hmemlcd.height/8;
-      hmemlcd.tilemaps[0].tile_size = 1 | 0<<2;
-      hmemlcd.tilemaps[0].scroll_x = 0;
-      hmemlcd.tilemaps[0].scroll_y = 0;
-      hmemlcd.tilemaps[0].tiles = font8x16_transp_bits;
-      hmemlcd.tilemaps[0].flags = TILE_TRANSPOSE;
-      // Overlay (for LED current)
-      hmemlcd.tilemaps[1].tile_size = 1 | 0<<2;
-      hmemlcd.tilemaps[1].scroll_x = (hmemlcd.width-48)/2;
-      hmemlcd.tilemaps[1].scroll_y = (hmemlcd.height-128)/2;
-      hmemlcd.tilemaps[1].tiles = font8x16_transp_bits;
-      hmemlcd.tilemaps[1].flags = TILE_TRANSPOSE;
-  } else {
-      // Background text
-      hmemlcd.tilemaps[0].height = hmemlcd.height/16;
-      hmemlcd.tilemaps[0].width = hmemlcd.width/8;
-      hmemlcd.tilemaps[0].tile_size = 0 | 1<<2;
-      hmemlcd.tilemaps[0].scroll_x = 0;
-      hmemlcd.tilemaps[0].scroll_y = 0;
-      hmemlcd.tilemaps[0].tiles = font8x16_bits;
-      hmemlcd.tilemaps[0].flags = 0;
-      // Overlay (for LED current)
-      hmemlcd.tilemaps[1].tile_size = 0 | 1<<2;
-      hmemlcd.tilemaps[1].scroll_x = (hmemlcd.width-128)/2;
-      hmemlcd.tilemaps[1].scroll_y = (hmemlcd.height-48)/2;
-      hmemlcd.tilemaps[1].tiles = font8x16_bits;
-      hmemlcd.tilemaps[1].flags = 0;
-  }
-  hmemlcd.tilemaps[0].map = tilemap;
-  hmemlcd.tilemaps[1].map = NULL;
+  BSP_init();
   State = STATE_OFF;
   /* USER CODE END 2 */
 

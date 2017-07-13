@@ -215,7 +215,7 @@ void CMD_tick() {
                         rlen = snprintf(response, 32, "version = %i\r\n", FIRMWARE_VERSION);
                         break;
                     default:
-                        rlen = snprintf(response, 32, "UNKNOWN VARIABLE\n");
+                        rlen = snprintf(response, 32, "Unknown variable %i\r\n", IntArgv[0]);
                         break;
                     }
                     while (CDC_Transmit_FS((uint8_t*)response, rlen) == USBD_BUSY);
@@ -242,17 +242,17 @@ void CMD_tick() {
                         HAL_FLASHEx_DATAEEPROM_Lock();
                         rlen = snprintf(response, 32, "!current = %i\r\n", IntArgv[1]);
                         break;
-#ifdef SETTABLE_MODEL
                     case 'M':
-                        if (IntArgv[1] >= 0 && IntArgv[1] < MEMLCD_MAX) {
-                            hmemlcd.model = IntArgv[1];
-                            MEMLCD_init(&hmemlcd);
-                            rlen = snprintf(response, 32, "!display_model = %i\r\n", IntArgv[1]);
+                        if (IntArgv[1] >= 0 && IntArgv[1] < MEMLCD_max_model) {
+                            HAL_FLASHEx_DATAEEPROM_Unlock();
+                            HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, (size_t)&EEPROM_Settings->lcd_model, IntArgv[1]);
+                            HAL_FLASHEx_DATAEEPROM_Lock();
+                            BSP_init();
+                            rlen = snprintf(response, 32, "!display_model = %s\r\n", MEMLCD_get_model_name(&hmemlcd));
                         } else {
                             rlen = snprintf(response, 32, "Unknown Model %i\r\n", IntArgv[1]);
                         }
                         break;
-#endif
                     case 0xCAFEFF2D:
                         *dfu_reset_flag = IntArgv[1];
                         rlen = snprintf(response, 32, "!dfu_flag = %X\r\n", IntArgv[1]);
@@ -275,7 +275,7 @@ void CMD_tick() {
             if (BinArgCount <= 0) {
                 switch (Command) {
                 case CMD_DOWNLOAD:
-                    MEMLCD_update_area(&hmemlcd, 1, -1);
+                    MEMLCD_update_area(&hmemlcd, 0, -1);
                     break;
                 default:
                     break;

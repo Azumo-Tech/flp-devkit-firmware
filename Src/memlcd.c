@@ -5,65 +5,59 @@
 #include <string.h>
 #include <stdint.h>
 
-static const char* MEMLCD_model_names[MEMLCD_MAX] = {
-    /* Sharp */
-    "LS012B7DH02",
-    "LS013B7DH05",
-    "LS027B7DH01",
-    "LS032B7DD02",
-    "LS044Q7DH01",
-    /* JDI */
-    "LPM013M126A",
-    "LPM027M128B"
+struct MEMLCD_Attributes {
+    const char *model_name;
+    uint16_t width, height;
+    uint16_t flags;
+    uint8_t vcom_freq;
 };
 
-static const uint16_t MEMLCD_flags[] = {
-        /* Sharp */
-        [MEMLCD_LS012B7DH02] = MEMLCD_ADDR_SHARP | MEMLCD_MONO | MEMLCD_PWR_3V,
-        [MEMLCD_LS013B7DH05] = MEMLCD_ADDR_SHARP | MEMLCD_MONO | MEMLCD_PWR_3V | MEMLCD_HFLIP | MEMLCD_VFLIP,
-        [MEMLCD_LS027B7DH01] = MEMLCD_ADDR_SHARP | MEMLCD_MONO | MEMLCD_PWR_5V | MEMLCD_ROT270,
-        [MEMLCD_LS032B7DD02] = MEMLCD_ADDR_SHARP_LONG | MEMLCD_MONO | MEMLCD_PWR_5V,
-        [MEMLCD_LS044Q7DH01] = MEMLCD_ADDR_SHARP | MEMLCD_MONO | MEMLCD_PWR_5V | MEMLCD_ROT270,
-        /* JDI */
-        [MEMLCD_LPM027M128B] = MEMLCD_ADDR_JDI | MEMLCD_RGB | MEMLCD_PWR_3V | MEMLCD_ROT270,
-        [MEMLCD_LPM013M126A] = MEMLCD_ADDR_JDI | MEMLCD_RGB | MEMLCD_PWR_3V,
+const struct MEMLCD_Attributes MEMLCD_database[] = {
+    {
+        /* Name    */ "LS012B7DH02",
+        /* W, H    */ 240, 240,
+        /* Flags   */ MEMLCD_ADDR_SHARP | MEMLCD_MONO | MEMLCD_PWR_3V,
+        /* VCOM Hz */ 60
+    },
+    {
+        /* Name    */ "LS013B7DH05",
+        /* W, H    */ 144, 168,
+        /* Flags   */ MEMLCD_ADDR_SHARP | MEMLCD_MONO | MEMLCD_PWR_3V | MEMLCD_HFLIP | MEMLCD_VFLIP,
+        /* VCOM Hz */ 60
+    },
+    {
+        /* Name    */ "LS027B7DH01",
+        /* W, H    */ 400, 240,
+        /* Flags   */ MEMLCD_ADDR_SHARP | MEMLCD_MONO | MEMLCD_PWR_5V | MEMLCD_ROT270,
+        /* VCOM Hz */ 5
+    },
+    {
+        /* Name    */ "LS032B7DD02",
+        /* W, H    */ 336, 536,
+        /* Flags   */ MEMLCD_ADDR_SHARP_LONG | MEMLCD_MONO | MEMLCD_PWR_5V,
+        /* VCOM Hz */ 5
+    },
+    {
+        /* Name    */ "LS044Q7DH01",
+        /* W, H    */ 320, 240,
+        /* Flags   */ MEMLCD_ADDR_SHARP | MEMLCD_MONO | MEMLCD_PWR_5V | MEMLCD_ROT270,
+        /* VCOM Hz */ 5
+    },
+    {
+        /* Name    */ "LPM013M126A",
+        /* W, H    */ 176, 176,
+        /* Flags   */ MEMLCD_ADDR_JDI | MEMLCD_RGB | MEMLCD_PWR_3V,
+        /* VCOM Hz */ 5
+    },
+    {
+        /* Name    */ "LPM027M128B",
+        /* W, H    */ 400, 240,
+        /* Flags   */ MEMLCD_ADDR_JDI | MEMLCD_RGB | MEMLCD_PWR_3V | MEMLCD_ROT270,
+        /* VCOM Hz */ 5
+    },
 };
 
-static const uint8_t MEMLCD_vcom_freq[] = {
-        /* Sharp */
-        [MEMLCD_LS012B7DH02] = 60,
-        [MEMLCD_LS013B7DH05] = 60,
-        [MEMLCD_LS027B7DH01] = 5,
-        [MEMLCD_LS032B7DD02] = 5,
-        [MEMLCD_LS044Q7DH01] = 5,
-        /* JDI */
-        [MEMLCD_LPM027M128B] = 5,
-        [MEMLCD_LPM013M126A] = 5,
-};
-
-static const uint16_t MEMLCD_height[] = {
-        /* Sharp */
-        [MEMLCD_LS012B7DH02] = 240,
-        [MEMLCD_LS013B7DH05] = 168,
-        [MEMLCD_LS027B7DH01] = 240,
-        [MEMLCD_LS032B7DD02] = 536,
-        [MEMLCD_LS044Q7DH01] = 240,
-        /* JDI */
-        [MEMLCD_LPM027M128B] = 240,
-        [MEMLCD_LPM013M126A] = 176,
-};
-
-static const uint16_t MEMLCD_width[] = {
-        /* Sharp */
-        [MEMLCD_LS012B7DH02] = 240,
-        [MEMLCD_LS013B7DH05] = 144,
-        [MEMLCD_LS027B7DH01] = 400,
-        [MEMLCD_LS032B7DD02] = 336,
-        [MEMLCD_LS044Q7DH01] = 320,
-        /* JDI */
-        [MEMLCD_LPM013M126A] = 176,
-        [MEMLCD_LPM027M128B] = 400,
-};
+const int MEMLCD_max_model = sizeof(MEMLCD_database)  / sizeof(*MEMLCD_database);
 
 struct MEMLCD_UpdateState {
     MEMLCD_HandleTypeDef *hmemlcd;
@@ -72,9 +66,9 @@ struct MEMLCD_UpdateState {
 
 
 void MEMLCD_init(MEMLCD_HandleTypeDef *hmemlcd) {
-    hmemlcd->flags = MEMLCD_flags[hmemlcd->model];
-    hmemlcd->width = MEMLCD_width[hmemlcd->model];
-    hmemlcd->height = MEMLCD_height[hmemlcd->model];
+    hmemlcd->flags = MEMLCD_database[hmemlcd->model].flags;
+    hmemlcd->width = MEMLCD_database[hmemlcd->model].width;
+    hmemlcd->height = MEMLCD_database[hmemlcd->model].height;
 
     hmemlcd->line_ct = hmemlcd->height;
     hmemlcd->line_len = hmemlcd->width/8 * ((hmemlcd->flags & MEMLCD_RGB) ? 3 : 1);
@@ -100,11 +94,11 @@ void MEMLCD_init(MEMLCD_HandleTypeDef *hmemlcd) {
     MEMLCD_clear_all(hmemlcd);
     HAL_GPIO_WritePin(hmemlcd->DISP_Port, hmemlcd->DISP_Pin, 1);
 
-    hmemlcd->htim->Init.Period = 60000/MEMLCD_vcom_freq[hmemlcd->model];
+    hmemlcd->htim->Init.Period = 60000/MEMLCD_database[hmemlcd->model].flags;
     HAL_TIM_Base_Init(hmemlcd->htim);
     TIM_OC_InitTypeDef pwm_conf;
     pwm_conf.OCMode = TIM_OCMODE_PWM1;
-    pwm_conf.Pulse = 30000/MEMLCD_vcom_freq[hmemlcd->model];;
+    pwm_conf.Pulse = 30000/MEMLCD_database[hmemlcd->model].vcom_freq;
     pwm_conf.OCPolarity = TIM_OCPOLARITY_HIGH;
     pwm_conf.OCFastMode = TIM_OCFAST_DISABLE;
     HAL_TIM_PWM_ConfigChannel(hmemlcd->htim, &pwm_conf, hmemlcd->tim_ch);
@@ -257,8 +251,17 @@ void MEMLCD_update_area(MEMLCD_HandleTypeDef *hmemlcd, uint16_t start, uint16_t 
     MEMLCD_send_next_line();
 }
 
-char* MEMLCD_get_model_name(MEMLCD_HandleTypeDef *hmemlcd) {
-    return MEMLCD_model_names[hmemlcd->model];
+const char* MEMLCD_get_model_name(MEMLCD_HandleTypeDef *hmemlcd) {
+    return MEMLCD_database[hmemlcd->model].model_name;
+}
+
+void MEMLCD_set_model_by_name(MEMLCD_HandleTypeDef *hmemlcd, char* name) {
+    for (uint8_t i = 0; i < MEMLCD_max_model; i++) {
+        if (!strncmp(MEMLCD_database[i].model_name, name, 12)) {
+            hmemlcd->model = i;
+            break;
+        }
+    }
 }
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi){

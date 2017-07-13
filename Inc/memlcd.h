@@ -1,18 +1,7 @@
 #ifndef __MEMLCD_H
 #define __MEMLCD_H
 
-enum MEMLCD_Model {
-    /* Sharp */
-    MEMLCD_LS012B7DH02,
-    MEMLCD_LS013B7DH05,
-    MEMLCD_LS027B7DH01,
-    MEMLCD_LS032B7DD02,
-    MEMLCD_LS044Q7DH01,
-    /* JDI */
-    MEMLCD_LPM013M126A,
-    MEMLCD_LPM027M128B,
-    MEMLCD_MAX
-};
+extern const int MEMLCD_max_model;
 
 enum MEMLCD_Flags {
     MEMLCD_ADDR_SHARP = 0x0,
@@ -27,7 +16,7 @@ enum MEMLCD_Flags {
     MEMLCD_ROT270 = 1<< 9,
 };
 
-enum TILE_Flags {
+enum MEMLCD_tile_Flags {
     TILE_TRANSPOSE = 0x1,
 };
 
@@ -44,7 +33,7 @@ struct TileLayer {
 };
 
 typedef struct MEMLCD_Handle {
-    enum MEMLCD_Model model;
+    uint8_t model;
 
     SPI_HandleTypeDef *hspi;
 
@@ -86,7 +75,9 @@ void MEMLCD_BW_blitline(MEMLCD_HandleTypeDef *hmemlcd, uint16_t x, uint16_t y, u
 
 int MEMLCD_busy();
 
-char* MEMLCD_get_model_name(MEMLCD_HandleTypeDef *hmemlcd);
+const char * MEMLCD_get_model_name(MEMLCD_HandleTypeDef *hmemlcd);
+void MEMLCD_set_model_by_name(MEMLCD_HandleTypeDef *hmemlcd, char* name);
+
 
 static inline int MEMLCD_bufsize(MEMLCD_HandleTypeDef *hmemlcd) {
     return hmemlcd->line_ct * hmemlcd->line_len;
