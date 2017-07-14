@@ -215,7 +215,7 @@ void CMD_tick() {
                         rlen = snprintf(response, 32, "version = %i\r\n", FIRMWARE_VERSION);
                         break;
                     default:
-                        rlen = snprintf(response, 32, "Unknown variable %i\r\n", IntArgv[0]);
+                        rlen = snprintf(response, 32, "E:Unknown variable %i\r\n", IntArgv[0]);
                         break;
                     }
                     while (CDC_Transmit_FS((uint8_t*)response, rlen) == USBD_BUSY);
@@ -250,7 +250,7 @@ void CMD_tick() {
                             BSP_init();
                             rlen = snprintf(response, 32, "!display_model = %s\r\n", MEMLCD_get_model_name(&hmemlcd));
                         } else {
-                            rlen = snprintf(response, 32, "Unknown Model %i\r\n", IntArgv[1]);
+                            rlen = snprintf(response, 32, "E:Unknown Model %i\r\n", IntArgv[1]);
                         }
                         break;
                     case 0xCAFEFF2D:
@@ -258,7 +258,7 @@ void CMD_tick() {
                         rlen = snprintf(response, 32, "!dfu_flag = %X\r\n", IntArgv[1]);
                         break;
                     default:
-                        rlen = snprintf(response, 32, "Unknown variable %i = %i\r\n", IntArgv[0], IntArgv[1]);
+                        rlen = snprintf(response, 32, "E:Unknown variable %i = %i\r\n", IntArgv[0], IntArgv[1]);
                         break;
                     }
                     while (CDC_Transmit_FS((uint8_t*)response, rlen) == USBD_BUSY);
