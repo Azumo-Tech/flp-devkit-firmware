@@ -20,10 +20,28 @@ const struct MEMLCD_Attributes MEMLCD_database[] = {
         /* VCOM Hz */ 60
     },
     {
+        /* Name    */ "LS010B7DH04",
+        /* W, H    */ 128, 128,
+        /* Flags   */ MEMLCD_ADDR_SHARP | MEMLCD_MONO | MEMLCD_PWR_3V,
+        /* VCOM Hz */ 60
+    },
+    {
+        /* Name    */ "LS013B7DH03",
+        /* W, H    */ 128, 128,
+        /* Flags   */ MEMLCD_ADDR_SHARP | MEMLCD_MONO | MEMLCD_PWR_3V,
+        /* VCOM Hz */ 60
+    },
+    {
         /* Name    */ "LS013B7DH05",
         /* W, H    */ 144, 168,
         /* Flags   */ MEMLCD_ADDR_SHARP | MEMLCD_MONO | MEMLCD_PWR_3V | MEMLCD_HFLIP | MEMLCD_VFLIP,
         /* VCOM Hz */ 60
+    },
+    {
+        /* Name    */ "LS013B7DH06",
+        /* W, H    */ 128, 128,
+        /* Flags   */ MEMLCD_ADDR_SHARP | MEMLCD_RGB | MEMLCD_PWR_5V,
+        /* VCOM Hz */ 5
     },
     {
         /* Name    */ "LS027B7DH01",
