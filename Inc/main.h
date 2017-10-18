@@ -112,7 +112,7 @@
 #define LED_PWR_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
-#define FIRMWARE_VERSION 20170823
+#define FIRMWARE_VERSION 20171018
 
 void BSP_init();
 /* USER CODE END Private defines */
