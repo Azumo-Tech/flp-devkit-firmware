@@ -108,6 +108,12 @@ const struct MEMLCD_Attributes MEMLCD_database[] = {
         /* Flags   */ MEMLCD_ADDR_JDI | MEMLCD_RGB | MEMLCD_PWR_3V | MEMLCD_ROT270,
         /* VCOM Hz */ 5
     },
+    {
+        /* Name    */ "LS011B7DH03",
+        /* W, H    */ 160, 68,
+        /* Flags   */ MEMLCD_ADDR_SHARP | MEMLCD_MONO | MEMLCD_PWR_3V,
+        /* VCOM Hz */ 60
+    },
 };
 
 const int MEMLCD_max_model = sizeof(MEMLCD_database)  / sizeof(*MEMLCD_database);
