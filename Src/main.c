@@ -428,7 +428,7 @@ int main(void)
           HAL_GPIO_WritePin(LED_PWR_GPIO_Port, LED_PWR_Pin, 1);
           memset(tilemap, 0, sizeof(tilemap));
           printxy(1,1,"FLEx Lighting");
-          printxy(1,2,"Charm V3.0");
+          printxy(1,2,"FLP Dev Kit");
           printxy(1,3,"FW Ver %i", FIRMWARE_VERSION);
           vbat_avg = BATTERY_read_voltage();
           printxy(1,5,"Vbat = %04i mV", vbat_avg);
