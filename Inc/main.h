@@ -49,6 +49,18 @@
 #ifndef __MAIN_H
 #define __MAIN_H
   /* Includes ------------------------------------------------------------------*/
+#include "stm32l1xx_hal.h"
+#include "stm32l1xx_ll_rtc.h"
+#include "stm32l1xx_ll_bus.h"
+#include "stm32l1xx_ll_cortex.h"
+#include "stm32l1xx_ll_rcc.h"
+#include "stm32l1xx_ll_system.h"
+#include "stm32l1xx_ll_utils.h"
+#include "stm32l1xx_ll_pwr.h"
+#include "stm32l1xx_ll_gpio.h"
+#include "stm32l1xx_ll_dma.h"
+
+#include "stm32l1xx_ll_exti.h"
 
 /* USER CODE BEGIN Includes */
 #include <stdint.h>

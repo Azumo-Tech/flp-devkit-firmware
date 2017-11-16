@@ -1,10 +1,9 @@
 /**
   ******************************************************************************
-  * @file           : USB_DEVICE  
-  * @version        : v2.0_Cube
-  * @brief          : This file implements the USB Device 
+  * @file    stm32_assert.h
+  * @brief   STM32 assert file.
   ******************************************************************************
-  * This notice applies to any and all portions of this file
+   * This notice applies to any and all portions of this file
   * that are not between comment pairs USER CODE BEGIN and
   * USER CODE END. Other portions of this file, whether 
   * inserted by the user or by software development tools
@@ -45,45 +44,40 @@
   * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   *
   ******************************************************************************
-*/
+  */
 
+/* Define to prevent recursive inclusion -------------------------------------*/
+#ifndef __STM32_ASSERT_H
+#define __STM32_ASSERT_H
+
+#ifdef __cplusplus
+ extern "C" {
+#endif
+
+/* Exported types ------------------------------------------------------------*/
+/* Exported constants --------------------------------------------------------*/
 /* Includes ------------------------------------------------------------------*/
+/* Exported macro ------------------------------------------------------------*/
+#ifdef  USE_FULL_ASSERT
+/**
+  * @brief  The assert_param macro is used for function's parameters check.
+  * @param  expr: If expr is false, it calls assert_failed function
+  *         which reports the name of the source file and the source
+  *         line number of the call that failed.
+  *         If expr is true, it returns no value.
+  * @retval None
+  */
+  #define assert_param(expr) ((expr) ? (void)0U : assert_failed((uint8_t *)__FILE__, __LINE__))
+/* Exported functions ------------------------------------------------------- */
+  void assert_failed(uint8_t* file, uint32_t line);
+#else
+  #define assert_param(expr) ((void)0U)
+#endif /* USE_FULL_ASSERT */
 
-#include "usb_device.h"
-#include "usbd_core.h"
-#include "usbd_desc.h"
-#include "usbd_cdc.h"
-#include "usbd_cdc_if.h"
-
-/* USB Device Core handle declaration */
-USBD_HandleTypeDef hUsbDeviceFS;
-
-/* init function */                                        
-void MX_USB_DEVICE_Init(void)
-{
-  /* USER CODE BEGIN USB_DEVICE_Init_PreTreatment */
-  
-  /* USER CODE END USB_DEVICE_Init_PreTreatment */
-  
-  /* Init Device Library,Add Supported Class and Start the library*/
-  USBD_Init(&hUsbDeviceFS, &FS_Desc, DEVICE_FS);
-
-  USBD_RegisterClass(&hUsbDeviceFS, &USBD_CDC);
-
-  USBD_CDC_RegisterInterface(&hUsbDeviceFS, &USBD_Interface_fops_FS);
-
-  USBD_Start(&hUsbDeviceFS);
-
-  /* USER CODE BEGIN USB_DEVICE_Init_PostTreatment */
-  
-  /* USER CODE END USB_DEVICE_Init_PostTreatment */
+#ifdef __cplusplus
 }
-/**
-  * @}
-  */
+#endif
 
-/**
-  * @}
-  */
+#endif /* __STM32_ASSERT_H */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

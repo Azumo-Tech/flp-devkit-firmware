@@ -86,8 +86,6 @@
 #define USBD_DEBUG_LEVEL     0
 /*---------- -----------*/
 #define USBD_SELF_POWERED     1
-/*---------- -----------*/
-#define USBD_CDC_INTERVAL     1000
 /****************************************/
 /* #define for FS and HS identification */
 #define DEVICE_FS 		0
