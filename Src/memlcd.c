@@ -122,7 +122,7 @@ void MEMLCD_init(MEMLCD_HandleTypeDef *hmemlcd) {
     hmemlcd->hspi->Init.CLKPolarity = SPI_POLARITY_LOW;
     hmemlcd->hspi->Init.CLKPhase = SPI_PHASE_1EDGE;
     hmemlcd->hspi->Init.NSS = SPI_NSS_SOFT;
-    hmemlcd->hspi->Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_8;
+    hmemlcd->hspi->Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
     hmemlcd->hspi->Init.TIMode = SPI_TIMODE_DISABLE;
     hmemlcd->hspi->Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
     hmemlcd->hspi->Init.CRCPolynomial = 10;
