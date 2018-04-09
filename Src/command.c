@@ -44,8 +44,8 @@
 #include "memlcd.h"
 #include "extflash.h"
 #include "eeprom.h"
-#include "led.h"
 #include "bsp.h"
+#include "flp.h"
 
 extern EXTFLASH_HandleTypeDef hflash;
 extern MEMLCD_HandleTypeDef hmemlcd;
@@ -105,10 +105,10 @@ void CMD_tick() {
         case CMD_NORMAL:
             switch(chr) {
             case 0x0E: /* Turn LED on */
-                HAL_GPIO_WritePin(LED_PWR_GPIO_Port, LED_PWR_Pin, 1);
+                FLP_on();
                 break;
             case 0x0F: /* Turn LED off */
-                HAL_GPIO_WritePin(LED_PWR_GPIO_Port, LED_PWR_Pin, 0);
+                FLP_off();
                 break;
             case 0x1B: /* Start of escape sequence */
                 Mode = CMD_ESC;
@@ -219,7 +219,7 @@ void CMD_tick() {
                     MEMLCD_update_area(&hmemlcd, 0,-1 );
                     break; }
                 case CMD_SET_CURRENT: {
-                    LED_set_current(IntArgv[0]);
+                    FLP_set_current(IntArgv[0]);
                     break; }
                 case CMD_GET_SETTING: {
                     char response[32];

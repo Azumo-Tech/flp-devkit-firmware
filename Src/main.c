@@ -61,8 +61,8 @@
 #include "font8x16_transp.xbm"
 #include "command.h"
 #include "eeprom.h"
-#include "led.h"
 #include "bsp.h"
+#include "flp.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -186,7 +186,7 @@ uint16_t BATTERY_read_voltage() {
 
 int SleepyTime() {
     int ret = 0;
-    HAL_GPIO_WritePin(LED_PWR_GPIO_Port, LED_PWR_Pin, 0); // Turn off LED
+    FLP_off(); // Turn off LED
     HAL_DAC_Stop(&hdac, DAC_CHANNEL_1); // Stop LED DAC
     MEMLCD_power_off(&hmemlcd);
     EXTFLASH_power_down(&hflash);
@@ -343,10 +343,10 @@ int main(void)
       }
       if (!HAL_GPIO_ReadPin(BT2_GPIO_Port, BT2_Pin)) {
           if (bt2_tim < 250) bt2_tim++;
-          if (bt2_tim >= 40 && HAL_GPIO_ReadPin(LED_PWR_GPIO_Port, LED_PWR_Pin)) {
+          if (bt2_tim >= 40 && FLP_is_on()) {
               b_ticks++;
               if (b_ticks >= 4) {
-                  LED_change_brightness(1);
+                  FLP_change_brightness(1);
                   b_ticks = 0;
               }
               ledmsg_tim = 50;
@@ -354,7 +354,7 @@ int main(void)
       } else {
           if(ledmsg_tim) ledmsg_tim--;
           if (bt2_tim > 3 && bt2_tim < 40)
-              HAL_GPIO_TogglePin(LED_PWR_GPIO_Port, LED_PWR_Pin);
+              FLP_toggle();
           bt2_tim = 0;
       }
 
@@ -408,8 +408,8 @@ int main(void)
           }
           break;
       case STATE_SPLASH_INIT:
-          LED_set_current(20);
-          HAL_GPIO_WritePin(LED_PWR_GPIO_Port, LED_PWR_Pin, 1);
+          FLP_set_current(20);
+          FLP_on();
           memset(tilemap, 0, sizeof(tilemap));
           printxy(1,1,"FLEx Lighting");
           printxy(1,2,"FLP Dev Kit");
@@ -426,7 +426,7 @@ int main(void)
           }
           printxy(1,5,"Vbat = %04i mV", vbat_avg);
           dirty = 1;
-          if (runticks == 20) HAL_GPIO_WritePin(LED_PWR_GPIO_Port, LED_PWR_Pin, 0);
+          if (runticks == 20) FLP_off();
           if (runticks >= 100 && bt1_tim == 0) {
               if (vbat_avg > 3300 || vbat_avg < 1500 || !HAL_GPIO_ReadPin(N_PGOOD_GPIO_Port, N_PGOOD_Pin)) {
                   State = STATE_SLIDESHOW_INIT;
@@ -457,7 +457,7 @@ int main(void)
           memset(tilemap, 0, sizeof(tilemap));
           cur_idx = 0;
           running = 1;
-          LED_set_current(EEPROM_Settings->default_led_current);
+          FLP_set_current(EEPROM_Settings->default_led_current);
           State = STATE_SLIDESHOW_LOAD;
           break;
       case STATE_SLIDESHOW_WAIT:
@@ -472,7 +472,7 @@ int main(void)
           if (!MEMLCD_busy()) {
               if(ledmsg_tim) {
                   hmemlcd.tilemaps[1].map = led_message;
-                  uint8_t current_ma = LED_get_current() / 100;
+                  uint8_t current_ma = FLP_get_current() / 100;
                   led_message[16+11] = '0' + current_ma % 10;
                   current_ma /= 10;
                   led_message[16+9] = '0' + current_ma % 10;
@@ -491,8 +491,8 @@ int main(void)
           runticks = EEPROM_Settings->slides[cur_idx].delay ? EEPROM_Settings->slides[cur_idx].delay : EEPROM_Settings->default_delay;
           uint16_t led_current = EEPROM_Settings->slides[cur_idx].led_current;
           if (led_current) {
-              LED_set_current(led_current);
-              HAL_GPIO_WritePin(LED_PWR_GPIO_Port, LED_PWR_Pin, 1);
+              FLP_set_current(led_current);
+              FLP_on();
           }
           EXTFLASH_read_screen(&hflash, EEPROM_Settings->slides[cur_idx].img, (void*)hmemlcd.buffer, MEMLCD_bufsize(&hmemlcd));
           dirty = 1;
