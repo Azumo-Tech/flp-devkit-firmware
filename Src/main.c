@@ -86,6 +86,8 @@ TIM_HandleTypeDef htim3;
 static uint8_t tilemap[1408];
 
 #define printxy(X,Y, ...) sprintf((char *)&tilemap[hmemlcd.tilemaps[0].width*(Y)+(X)], __VA_ARGS__)
+#define clrscr() memset(tilemap, 0, sizeof(tilemap))
+
 
 MEMLCD_HandleTypeDef hmemlcd = {
         .hspi = &hspi3,
@@ -112,7 +114,7 @@ EXTFLASH_HandleTypeDef hflash = {
 
 volatile uint8_t dirty, cur_idx, running;
 uint16_t runticks, vbat_avg;
-uint8_t batticks, batidx, batdirty, b_ticks;
+uint8_t b_ticks;
 uint8_t led_message[] = {
         201,205,205,205,205,205,205,205,205,205,205,205,205,205,205,187,
         186,' ','1',' ','L','E','D',' ','2','0','.','0','m','A',' ',186,
@@ -185,7 +187,7 @@ uint16_t BATTERY_read_voltage() {
     return vbat;
 }
 
-int SleepyTime() {
+int BSP_sleep() {
     int ret = 0;
     FLP_off();
     MEMLCD_power_off(&hmemlcd);
@@ -339,7 +341,7 @@ int main(void)
 
       if (BUTTON_is_released(2, 40)) {
     	  FLP_toggle();
-      } else if(BUTTON_held_time(2) > 40) {
+      } else if(BUTTON_held_time(2) > 40 && FLP_is_on()) {
     	  b_ticks++;
     	  if (b_ticks >= 4) {
     		  FLP_change_brightness(1);
@@ -360,8 +362,8 @@ int main(void)
       switch (State) {
       case STATE_OFF:
           while (MEMLCD_busy());
-          memset(hmemlcd.buffer, 0, MEMLCD_bufsize(&hmemlcd));
-          if (SleepyTime() == 1) { // Woke up with button
+          MEMLCD_clear_all(&hmemlcd);
+          if (BSP_sleep() == 1) { // Woke up with button
               State = STATE_SPLASH_INIT;
           } else { // Woke up with USB
               State = STATE_CHARGING_INIT;
@@ -370,7 +372,7 @@ int main(void)
 
       case STATE_CHARGING_INIT:
           if (!MEMLCD_busy()) {
-              memset(tilemap, 0, sizeof(tilemap));
+              clrscr();
               printxy(1, 1, "USB CONNECTED");
               printxy(1, 2, "CHARGING...");
               printxy(1, 3, "PRESS POWER");
@@ -396,7 +398,7 @@ int main(void)
       case STATE_SPLASH_INIT:
           FLP_set_current(20);
           FLP_on();
-          memset(tilemap, 0, sizeof(tilemap));
+          clrscr();
           printxy(1,1,"FLEx Lighting");
           printxy(1,2,"FLP Dev Kit");
           printxy(1,3,"FW Ver %i", FIRMWARE_VERSION);
@@ -426,7 +428,7 @@ int main(void)
           break;
 
       case STATE_LOW_BATT_INIT:
-          memset(tilemap, 0, sizeof(tilemap));
+          clrscr();
           printxy(1, 1, "LOW BATTERY!");
           printxy(1, 2, "PLEASE CONNECT");
           printxy(1, 3, "USB CHARGER");
@@ -440,7 +442,7 @@ int main(void)
           runticks++;
           break;
       case STATE_SLIDESHOW_INIT:
-          memset(tilemap, 0, sizeof(tilemap));
+          clrscr();
           cur_idx = 0;
           running = 1;
           FLP_set_current(EEPROM_Settings->default_led_current);

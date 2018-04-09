@@ -154,6 +154,8 @@ void MEMLCD_power_off(MEMLCD_HandleTypeDef *hmemlcd) {
 }
 
 void MEMLCD_clear_all(MEMLCD_HandleTypeDef *hmemlcd){
+	memset(hmemlcd->buffer, 0, MEMLCD_bufsize(hmemlcd));
+
     uint8_t cmd[2] = {0b100, 0};
     /* For some reason we need to send the command twice for it to work */
     HAL_GPIO_WritePin(hmemlcd->CS_Port, hmemlcd->CS_Pin, 1);
