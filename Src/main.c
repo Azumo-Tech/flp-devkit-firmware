@@ -187,8 +187,7 @@ uint16_t BATTERY_read_voltage() {
 
 int SleepyTime() {
     int ret = 0;
-    FLP_off(); // Turn off LED
-    HAL_DAC_Stop(&hdac, DAC_CHANNEL_1); // Stop LED DAC
+    FLP_off();
     MEMLCD_power_off(&hmemlcd);
     EXTFLASH_power_down(&hflash);
     USBD_Stop(&hUsbDeviceFS);
@@ -212,7 +211,6 @@ int SleepyTime() {
     MX_SPI3_Init();
     MX_USB_DEVICE_Init();
     EXTFLASH_power_up(&hflash);
-    HAL_DAC_Start(&hdac, DAC_CHANNEL_1);
     MEMLCD_init(&hmemlcd);
     return ret;
 }

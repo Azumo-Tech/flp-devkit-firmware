@@ -88,14 +88,17 @@ bool FLP_is_on() {
 }
 
 void FLP_on() {
+	HAL_DAC_Start(&hdac, DAC_CHANNEL_1);
 	HAL_GPIO_WritePin(LED_PWR_GPIO_Port, LED_PWR_Pin, 1);
 }
 
 void FLP_off() {
 	HAL_GPIO_WritePin(LED_PWR_GPIO_Port, LED_PWR_Pin, 0);
+	HAL_DAC_Stop(&hdac, DAC_CHANNEL_1); // Stop LED DAC
 }
 
 bool FLP_toggle() {
+	HAL_DAC_Start(&hdac, DAC_CHANNEL_1);
 	HAL_GPIO_TogglePin(LED_PWR_GPIO_Port, LED_PWR_Pin);
 	return FLP_is_on();
 }
