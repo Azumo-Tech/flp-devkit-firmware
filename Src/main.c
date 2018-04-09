@@ -63,6 +63,7 @@
 #include "eeprom.h"
 #include "bsp.h"
 #include "flp.h"
+#include "buttons.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -167,7 +168,7 @@ uint16_t BATTERY_read_voltage() {
     HAL_ADC_Start(&hadc);
     HAL_ADC_PollForConversion(&hadc, 1000);
     uint16_t vdda_raw_adc = HAL_ADC_GetValue(&hadc);
-    uint16_t vdda = (3000L*(*(uint16_t*)0x1FF800F8)) / vdda_raw_adc;
+    /* uint16_t vdda = (3000L*(*(uint16_t*)0x1FF800F8)) / vdda_raw_adc; */
 
     adcChannel.Channel = ADC_CHANNEL_13;
     adcChannel.Rank = 1;
@@ -288,7 +289,7 @@ void BSP_init() {
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-    uint8_t bt1_tim=0, bt2_tim=0, bt3_tim=0, ledmsg_tim=0;
+    uint8_t ledmsg_tim=0;
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -336,41 +337,28 @@ int main(void)
           MEMLCD_update_area(&hmemlcd, 0, -1);
           dirty = 0;
       }
-      if (!HAL_GPIO_ReadPin(BT1_GPIO_Port, BT1_Pin)) {
-          if (bt1_tim < 250) bt1_tim++;
-      } else {
-          bt1_tim = 0;
+      BUTTON_poll();
+
+      if (BUTTON_is_released(2, 40)) {
+    	  FLP_toggle();
+      } else if(BUTTON_held_time(2) > 40) {
+    	  b_ticks++;
+    	  if (b_ticks >= 4) {
+    		  FLP_change_brightness(1);
+    		  b_ticks = 0;
+    	  }
+    	  ledmsg_tim = 50;
       }
-      if (!HAL_GPIO_ReadPin(BT2_GPIO_Port, BT2_Pin)) {
-          if (bt2_tim < 250) bt2_tim++;
-          if (bt2_tim >= 40 && FLP_is_on()) {
-              b_ticks++;
-              if (b_ticks >= 4) {
-                  FLP_change_brightness(1);
-                  b_ticks = 0;
-              }
-              ledmsg_tim = 50;
-          }
-      } else {
-          if(ledmsg_tim) ledmsg_tim--;
-          if (bt2_tim > 3 && bt2_tim < 40)
-              FLP_toggle();
-          bt2_tim = 0;
+      if(ledmsg_tim) ledmsg_tim--;
+
+      if (BUTTON_is_released(3, 50)) {
+    	  running = 0;
+    	  runticks = 0;
+      } else if (BUTTON_held_time(3) == 100) {
+    	  running = 1;
+    	  runticks = 0;
       }
 
-      if (!HAL_GPIO_ReadPin(BT3_GPIO_Port, BT3_Pin)) {
-          if (bt3_tim < 250) bt3_tim++;
-          if (bt3_tim == 100) {
-              running = 1;
-              runticks = 0;
-          }
-      } else {
-          if (bt3_tim > 3 && bt3_tim < 100) {
-              running = 0;
-              runticks = 0;
-          }
-          bt3_tim = 0;
-      }
       switch (State) {
       case STATE_OFF:
           while (MEMLCD_busy());
@@ -399,7 +387,7 @@ int main(void)
               runticks++;
               break;
           }
-          if (bt1_tim) State = STATE_SPLASH_INIT;
+          if (BUTTON_held_time(1)) State = STATE_SPLASH_INIT;
           if(!HAL_GPIO_ReadPin(N_PGOOD_GPIO_Port, N_PGOOD_Pin) && HAL_GPIO_ReadPin(N_CHARGING_GPIO_Port, N_CHARGING_Pin)) {
               State = STATE_SPLASH_INIT; // If charging is done
           }
@@ -427,7 +415,7 @@ int main(void)
           printxy(1,5,"Vbat = %04i mV", vbat_avg);
           dirty = 1;
           if (runticks == 20) FLP_off();
-          if (runticks >= 100 && bt1_tim == 0) {
+          if (runticks >= 100 && BUTTON_held_time(1) == 0) {
               if (vbat_avg > 3300 || vbat_avg < 1500 || !HAL_GPIO_ReadPin(N_PGOOD_GPIO_Port, N_PGOOD_Pin)) {
                   State = STATE_SLIDESHOW_INIT;
               } else {
@@ -461,7 +449,7 @@ int main(void)
           State = STATE_SLIDESHOW_LOAD;
           break;
       case STATE_SLIDESHOW_WAIT:
-          if (bt1_tim >= 100) {
+          if (BUTTON_held_time(1) >= 100) {
               State = STATE_OFF;
           }
           if (!runticks) {
