@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Project>
-<ProjectName>/home/cyborgar/Downloads/devtools/flp-devkit-test/flex-flp-devkit/\flex-flp-devkit</ProjectName>
+<ProjectName>/home/jromero/electronics/charm/firmware/flex-flp-devkit/\flex-flp-devkit</ProjectName>
 <ProjectNature>C</ProjectNature> 
 <CMSIS>../Drivers/CMSIS</CMSIS>
-<HAL_Driver>/home/cyborgar/STM32Cube/Repository//STM32Cube_FW_L1_V1.8.1/Drivers/CMSIS</HAL_Driver>
+<HAL_Driver>/home/jromero/STM32Cube/Repository//STM32Cube_FW_L1_V1.8.1/Drivers/CMSIS</HAL_Driver>
 <Toolchain>TrueSTUDIO</Toolchain>
 <Version>0</Version>
 
@@ -32,7 +32,7 @@
     <usedDebug>true</usedDebug>
     	<debugprobe>swd</debugprobe>
     <optimization></optimization>
-    <icfloc>1</icfloc>
+    <icfloc>0</icfloc>
     <Adefines>
         <define></define>
     </Adefines>   
