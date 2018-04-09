@@ -62,6 +62,7 @@
 #include "command.h"
 #include "eeprom.h"
 #include "led.h"
+#include "bsp.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -129,13 +130,6 @@ static enum BoardState {
     STATE_SLIDESHOW_LOAD,
     STATE_SLIDESHOW_WAIT,
 } State;
-
-#define SYSMEM_RESET_VECTOR        0x1ff00004
-#define DFU_RESET_COOKIE           0xDEADBEEF
-#define BOOTLOADER_STACK_POINTER   0x20001000
-/* This code relies on data after BSS being uninitialized on reset, so we know if we wanted to jump to the bootloader */
-extern uint32_t _ebss;
-static uint32_t *dfu_reset_flag = &_ebss+1;
 
 /* USER CODE END PV */
 
@@ -295,16 +289,6 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
     uint8_t bt1_tim=0, bt2_tim=0, bt3_tim=0, ledmsg_tim=0;
-
-    if (*dfu_reset_flag == DFU_RESET_COOKIE) {
-            void (*bootloader)(
-                    void) = (void (*)(void)) (*((uint32_t *) SYSMEM_RESET_VECTOR));
-            *dfu_reset_flag = 0;
-            __set_MSP(BOOTLOADER_STACK_POINTER);
-            SYSCFG->MEMRMP = 1;
-            bootloader();
-            while (1);
-    }
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/

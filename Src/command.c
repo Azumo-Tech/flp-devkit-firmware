@@ -45,14 +45,11 @@
 #include "extflash.h"
 #include "eeprom.h"
 #include "led.h"
+#include "bsp.h"
 
 extern EXTFLASH_HandleTypeDef hflash;
 extern MEMLCD_HandleTypeDef hmemlcd;
 extern volatile uint8_t running;
-
-/* This code relies on data after BSS being uninitialized on reset, so we know if we wanted to jump to the bootloader */
-extern uint32_t _ebss;
-static uint32_t *dfu_reset_flag = &_ebss+1;
 
 static enum CMDState {
     CMD_NORMAL,
@@ -161,10 +158,7 @@ void CMD_tick() {
                 beginIntArgs(1);
                 break;
             case 'b':
-                HAL_GPIO_WritePin(USB_DISCONNECT_GPIO_Port, USB_DISCONNECT_Pin, 1);
-                USBD_Stop(&hUsbDeviceFS);
-                HAL_Delay(1000);
-                HAL_NVIC_SystemReset();
+                BSP_reset();
                 Mode = CMD_NORMAL;
                 break;
             default:
@@ -289,8 +283,10 @@ void CMD_tick() {
                         }
                         break;
                     case 0xCAFEFF2D:
-                        *dfu_reset_flag = IntArgv[1];
                         rlen = snprintf(response, 32, "!dfu_flag = %X\r\n", IntArgv[1]);
+                        if (IntArgv[1] == 0xDEADBEEF) {
+                        	BSP_reset_to_bootloader();
+                        }
                         break;
                     default:
                         rlen = snprintf(response, 32, "E:Unknown variable %i = %i\r\n", IntArgv[0], IntArgv[1]);

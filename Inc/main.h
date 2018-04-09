@@ -134,9 +134,7 @@
 /* #define USE_FULL_ASSERT    1U */
 
 /* USER CODE BEGIN Private defines */
-#define FIRMWARE_VERSION 20171018
 
-void BSP_init();
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
