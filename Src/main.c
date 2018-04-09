@@ -62,7 +62,6 @@
 #include "command.h"
 #include "eeprom.h"
 #include "led.h"
-#include "battery-icon.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -519,34 +518,6 @@ int main(void)
           State = STATE_OFF;
           break;
       }
-
-#ifdef _USE_BAT_ICON
-      if (HAL_GPIO_ReadPin(N_CHARGING_GPIO_Port, N_CHARGING_Pin) == 0) {
-          if (batticks++ > 20 || dirty) {
-              batticks=0;
-              batidx = (((batidx-1) + 1) & 3) + 1;
-              batdirty=1;
-          }
-      } else if (HAL_GPIO_ReadPin(N_PGOOD_GPIO_Port, N_PGOOD_Pin) == 0) {
-          if (batidx != 5 || dirty) {
-              batidx = 5;
-              batdirty=1;
-          }
-      }
-      if (batdirty){
-          uint8_t bpp = (hmemlcd.flags & MEMLCD_RGB)? 3 : 1;
-          for (int y=0; y<8; y++) {
-              uint32_t *dest = &MEMLCD_get_bb_buffer(&hmemlcd)[(y+8)*hmemlcd.line_len*8];
-              for (int x=0; x<16; x++) {
-                  for (int b=0; b<bpp; b++) {
-                      dest[b+(x+hmemlcd.line_len*8-24)*bpp] = (battery_bin[(batidx)*16+2*y+x/8] & 1<<(x&7))? 1 : 0;
-                  }
-              }
-          }
-          batdirty = 0;
-          dirty = 1;
-      }
-#endif
 
       CMD_tick();
       while (HAL_GetTick() - looptime < 20); // Cycle time = 20ms
