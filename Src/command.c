@@ -101,7 +101,6 @@ void CMD_tick() {
             switch(chr) {
             case 'c': /* Clear screen */
                 MEMLCD_clear_all(&hmemlcd);
-                memset(hmemlcd.buffer, 0, MEMLCD_bufsize(&hmemlcd));
                 running = 0;
                 Mode = CMD_NORMAL;
                 break;

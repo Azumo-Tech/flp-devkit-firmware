@@ -71,8 +71,6 @@ void MEMLCD_set_disp(MEMLCD_HandleTypeDef *hmemlcd, uint8_t state);
 
 void MEMLCD_update_area(MEMLCD_HandleTypeDef *hmemlcd, uint16_t start, uint16_t end);
 
-void MEMLCD_BW_blitline(MEMLCD_HandleTypeDef *hmemlcd, uint16_t x, uint16_t y, uint8_t *buff, uint16_t bx, uint16_t width);
-
 int MEMLCD_busy();
 
 const char * MEMLCD_get_model_name(MEMLCD_HandleTypeDef *hmemlcd);
@@ -81,10 +79,6 @@ void MEMLCD_set_model_by_name(MEMLCD_HandleTypeDef *hmemlcd, char* name);
 
 static inline int MEMLCD_bufsize(MEMLCD_HandleTypeDef *hmemlcd) {
     return hmemlcd->line_ct * hmemlcd->line_len;
-}
-
-static inline uint32_t* MEMLCD_get_bb_buffer(MEMLCD_HandleTypeDef *hmemlcd) {
-    return (uint32_t*)(SRAM_BB_BASE + ((size_t)&hmemlcd->buffer[0] - SRAM_BASE)*32);
 }
 
 #endif
