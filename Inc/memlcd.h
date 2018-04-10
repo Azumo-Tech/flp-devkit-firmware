@@ -31,7 +31,7 @@ struct TileLayer {
     uint8_t flags;
     int16_t scroll_x;
     int16_t scroll_y;
-    uint8_t *tiles;
+    const uint8_t *tiles;
     uint8_t *map;
     uint8_t *attrmap;
 };
