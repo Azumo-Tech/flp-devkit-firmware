@@ -32,7 +32,7 @@ extern MEMLCD_HandleTypeDef hmemlcd;
 void SystemClock_Config(void);
 
 static const uint32_t DFU_BOOTKEY = 0x157F32D4;
-static uint32_t *bootkey_adr = (void *)(0x20013ffc); /* This is where the bootloader looks for the magic number */
+volatile extern uint32_t __bootlock; /* This is where the bootloader looks for the magic number, defined in the LD script */
 
 void BSP_init() {
     if (EEPROM_Settings->version != FIRMWARE_VERSION) {
@@ -89,7 +89,7 @@ int BSP_sleep() {
 }
 
 void BSP_reset_to_bootloader() {
-	*bootkey_adr = DFU_BOOTKEY;
+	__bootlock = DFU_BOOTKEY;
 	BSP_reset();
 }
 
