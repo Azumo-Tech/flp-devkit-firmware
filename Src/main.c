@@ -64,26 +64,18 @@
 #include "usbd_cdc_if.h"
 #include "memlcd.h"
 #include "extflash.h"
-#include "segfont.h"
-#include "font8x16.xbm"
-#include "font8x16_transp.xbm"
 #include "command.h"
 #include "eeprom.h"
 #include "bsp.h"
 #include "flp.h"
 #include "buttons.h"
+#include "console.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-
-static uint8_t tilemap[1408];
-
-#define printxy(X,Y, ...) sprintf((char *)&tilemap[hmemlcd.tilemaps[0].width*(Y)+(X)], __VA_ARGS__)
-#define clrscr() memset(tilemap, 0, sizeof(tilemap))
-
 
 MEMLCD_HandleTypeDef hmemlcd = {
         .hspi = &hspi3,
@@ -108,14 +100,9 @@ EXTFLASH_HandleTypeDef hflash = {
         .size = 2*1024*1024,
 };
 
-volatile uint8_t dirty, cur_idx, running;
+uint8_t dirty, cur_idx, running;
 uint16_t runticks, vbat_avg;
 uint8_t b_ticks;
-uint8_t led_message[] = {
-        201,205,205,205,205,205,205,205,205,205,205,205,205,205,205,187,
-        186,' ','1',' ','L','E','D',' ','2','0','.','0','m','A',' ',186,
-        200,205,205,205,205,205,205,205,205,205,205,205,205,205,205,188,
-};
 
 static enum BoardState {
     STATE_OFF,
@@ -129,6 +116,12 @@ static enum BoardState {
     STATE_SLIDESHOW_LOAD,
     STATE_SLIDESHOW_WAIT,
 } State;
+
+uint8_t led_message[] = {
+        201,205,205,205,205,205,205,205,205,205,205,205,205,205,205,187,
+        186,' ','1',' ','L','E','D',' ','2','0','.','0','m','A',' ',186,
+        200,205,205,205,205,205,205,205,205,205,205,205,205,205,205,188,
+};
 
 /* USER CODE END PV */
 
@@ -168,98 +161,6 @@ uint16_t BATTERY_read_voltage() {
     HAL_ADC_Stop(&hadc);
 
     return vbat;
-}
-
-int BSP_sleep() {
-    int ret = 0;
-    FLP_off();
-    MEMLCD_power_off(&hmemlcd);
-    EXTFLASH_power_down(&hflash);
-    USBD_Stop(&hUsbDeviceFS);
-    USBD_DeInit(&hUsbDeviceFS);
-    SysTick->CTRL = 0;
-    HAL_I2C_DeInit(&hi2c2);
-    HAL_SPI_DeInit(&hspi1);
-    HAL_SPI_DeInit(&hspi2);
-    HAL_SPI_DeInit(&hspi3);
-    HAL_ADC_DeInit(&hadc);
-    while (!HAL_GPIO_ReadPin(BT1_GPIO_Port, BT1_Pin));
-    while (HAL_GPIO_ReadPin(BT1_GPIO_Port, BT1_Pin) && HAL_GPIO_ReadPin(N_PGOOD_GPIO_Port, N_PGOOD_Pin)) {
-        HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_SLEEPENTRY_WFI);
-    }
-    if (!HAL_GPIO_ReadPin(BT1_GPIO_Port, BT1_Pin)) ret = 1;
-    SystemClock_Config();
-    MX_ADC_Init();
-    MX_I2C2_Init();
-    MX_SPI1_Init();
-    MX_SPI2_Init();
-    MX_SPI3_Init();
-    MX_USB_DEVICE_Init();
-    EXTFLASH_power_up(&hflash);
-    MEMLCD_init(&hmemlcd);
-    return ret;
-}
-
-
-void BSP_init() {
-    if (EEPROM_Settings->version != FIRMWARE_VERSION) {
-        HAL_FLASHEx_DATAEEPROM_Unlock();
-        HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_WORD, (size_t)&EEPROM_Settings->version, FIRMWARE_VERSION);
-        HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, (size_t)&EEPROM_Settings->default_delay, 150);
-        HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, (size_t)&EEPROM_Settings->slide_count, 10);
-        HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_HALFWORD, (size_t)&EEPROM_Settings->default_led_current, 20000);
-        if (EEPROM_Settings->lcd_model > MEMLCD_max_model) {
-        	HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, (size_t)&EEPROM_Settings->lcd_model, 5);
-        }
-        HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, (size_t)&EEPROM_Settings->flags, 0);
-        for (uint8_t i=0; i<64; i++) {
-            HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, (size_t)&EEPROM_Settings->slides[i].delay, 0);
-            HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, (size_t)&EEPROM_Settings->slides[i].img, i);
-            HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_HALFWORD, (size_t)&EEPROM_Settings->slides[i].led_current, 0);
-        }
-        HAL_FLASHEx_DATAEEPROM_Lock();
-    }
-    hmemlcd.model = EEPROM_Settings->lcd_model;
-    MEMLCD_init(&hmemlcd);
-    // Set the flash image stride to be able to hold the whole screen, rounded up to a whole number of sectors.
-    hflash.stride = 4096 * ((MEMLCD_bufsize(&hmemlcd) + 4095 ) / 4096);
-    // Set up the default tile maps, common to both orientations
-    // Background text
-    hmemlcd.tilemaps[0].scroll_x = 0;
-    hmemlcd.tilemaps[0].scroll_y = 0;
-    // Overlay (for LED current)
-    hmemlcd.tilemaps[1].height = 3;
-    hmemlcd.tilemaps[1].width = 16;
-    // Set up attributes that depend on orientation
-    if (hmemlcd.flags & MEMLCD_ROT270) {
-        // Background text
-        hmemlcd.tilemaps[0].height = hmemlcd.width/16;
-        hmemlcd.tilemaps[0].width = hmemlcd.height/8;
-        hmemlcd.tilemaps[0].tile_size = 1 | 0<<2;
-        hmemlcd.tilemaps[0].tiles = font8x16_transp_bits;
-        hmemlcd.tilemaps[0].flags = TILE_TRANSPOSE;
-        // Overlay (for LED current)
-        hmemlcd.tilemaps[1].tile_size = 1 | 0<<2;
-        hmemlcd.tilemaps[1].scroll_x = (hmemlcd.width-48)/2;
-        hmemlcd.tilemaps[1].scroll_y = (hmemlcd.height-128)/2;
-        hmemlcd.tilemaps[1].tiles = font8x16_transp_bits;
-        hmemlcd.tilemaps[1].flags = TILE_TRANSPOSE;
-    } else {
-        // Background text
-        hmemlcd.tilemaps[0].height = hmemlcd.height/16;
-        hmemlcd.tilemaps[0].width = hmemlcd.width/8;
-        hmemlcd.tilemaps[0].tile_size = 0 | 1<<2;
-        hmemlcd.tilemaps[0].tiles = font8x16_bits;
-        hmemlcd.tilemaps[0].flags = 0;
-        // Overlay (for LED current)
-        hmemlcd.tilemaps[1].tile_size = 0 | 1<<2;
-        hmemlcd.tilemaps[1].scroll_x = (hmemlcd.width-128)/2;
-        hmemlcd.tilemaps[1].scroll_y = (hmemlcd.height-48)/2;
-        hmemlcd.tilemaps[1].tiles = font8x16_bits;
-        hmemlcd.tilemaps[1].flags = 0;
-    }
-    hmemlcd.tilemaps[0].map = tilemap;
-    hmemlcd.tilemaps[1].map = NULL;
 }
 
 /* USER CODE END 0 */
@@ -305,6 +206,7 @@ int main(void)
   MX_ADC_Init();
   /* USER CODE BEGIN 2 */
   BSP_init();
+  CON_init();
   State = STATE_OFF;
   /* USER CODE END 2 */
 

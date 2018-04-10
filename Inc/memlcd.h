@@ -1,6 +1,10 @@
 #ifndef __MEMLCD_H
 #define __MEMLCD_H
 
+#include "tim.h"
+#include "spi.h"
+#include "gpio.h"
+
 extern const int MEMLCD_max_model;
 
 enum MEMLCD_Flags {

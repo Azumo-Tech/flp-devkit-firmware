@@ -4,6 +4,7 @@
 #define FIRMWARE_VERSION 20171018
 
 void BSP_init();
+int BSP_sleep();
 void BSP_reset_to_bootloader();
 void BSP_reset();
 

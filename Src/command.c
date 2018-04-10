@@ -29,7 +29,7 @@
 
 extern EXTFLASH_HandleTypeDef hflash;
 extern MEMLCD_HandleTypeDef hmemlcd;
-extern volatile uint8_t running;
+extern uint8_t running;
 
 static enum CMDState {
     CMD_NORMAL,
