@@ -29,70 +29,82 @@ struct MEMLCD_Attributes {
 
 const struct MEMLCD_Attributes MEMLCD_database[] = {
     {
-        /* Name    */ "LS012B7DH02",
+        /* Name    */ "LS012B7DH02", //0
         /* W, H    */ 240, 240,
         /* Flags   */ MEMLCD_ADDR_SHARP | MEMLCD_MONO | MEMLCD_PWR_3V,
         /* VCOM Hz */ 60
     },
     {
-        /* Name    */ "LS010B7DH04",
+        /* Name    */ "LS010B7DH04", //1
         /* W, H    */ 128, 128,
         /* Flags   */ MEMLCD_ADDR_SHARP | MEMLCD_MONO | MEMLCD_PWR_3V,
         /* VCOM Hz */ 60
     },
     {
-        /* Name    */ "LS013B7DH03",
+        /* Name    */ "LS013B7DH03", //2
         /* W, H    */ 128, 128,
         /* Flags   */ MEMLCD_ADDR_SHARP | MEMLCD_MONO | MEMLCD_PWR_3V,
         /* VCOM Hz */ 60
     },
     {
-        /* Name    */ "LS013B7DH05",
+        /* Name    */ "LS013B7DH05", //3
         /* W, H    */ 144, 168,
         /* Flags   */ MEMLCD_ADDR_SHARP | MEMLCD_MONO | MEMLCD_PWR_3V | MEMLCD_HFLIP | MEMLCD_VFLIP,
         /* VCOM Hz */ 60
     },
     {
-        /* Name    */ "LS013B7DH06",
+        /* Name    */ "LS013B7DH06", //4
         /* W, H    */ 128, 128,
         /* Flags   */ MEMLCD_ADDR_SHARP | MEMLCD_RGB | MEMLCD_PWR_5V,
         /* VCOM Hz */ 5
     },
     {
-        /* Name    */ "LS027B7DH01",
+        /* Name    */ "LS027B7DH01", //5
         /* W, H    */ 400, 240,
         /* Flags   */ MEMLCD_ADDR_SHARP | MEMLCD_MONO | MEMLCD_PWR_5V | MEMLCD_ROT270,
         /* VCOM Hz */ 5
     },
     {
-        /* Name    */ "LS032B7DD02",
+        /* Name    */ "LS032B7DD02", //6
         /* W, H    */ 336, 536,
         /* Flags   */ MEMLCD_ADDR_SHARP_LONG | MEMLCD_MONO | MEMLCD_PWR_5V,
-        /* VCOM Hz */ 5
+        /* VCOM Hz */ 3
     },
     {
-        /* Name    */ "LS044Q7DH01",
+        /* Name    */ "LS044Q7DH01", //7
         /* W, H    */ 320, 240,
         /* Flags   */ MEMLCD_ADDR_SHARP | MEMLCD_MONO | MEMLCD_PWR_5V | MEMLCD_ROT270,
         /* VCOM Hz */ 5
     },
     {
-        /* Name    */ "LPM013M126A",
+        /* Name    */ "LPM013M126A", //8
         /* W, H    */ 176, 176,
         /* Flags   */ MEMLCD_ADDR_JDI | MEMLCD_RGB | MEMLCD_PWR_3V,
         /* VCOM Hz */ 5
     },
     {
-        /* Name    */ "LPM027M128B",
+        /* Name    */ "LPM027M128B", //9
         /* W, H    */ 400, 240,
         /* Flags   */ MEMLCD_ADDR_JDI | MEMLCD_RGB | MEMLCD_PWR_3V | MEMLCD_ROT270,
         /* VCOM Hz */ 5
     },
     {
-        /* Name    */ "LS011B7DH03",
+        /* Name    */ "LS011B7DH03", //10
         /* W, H    */ 160, 68,
         /* Flags   */ MEMLCD_ADDR_SHARP | MEMLCD_MONO | MEMLCD_PWR_3V,
         /* VCOM Hz */ 60
+    },
+	{
+		/* Name    */ "LPM044M141A", //11
+		/* W, H    */ 640, 480,
+		/* Flags   */ MEMLCD_ADDR_JDI | MEMLCD_RGB | MEMLCD_PWR_3V | MEMLCD_ROT270,
+		/* VCOM Hz */ 5
+	},
+    {
+        /* Name    */ "LS018B7DH02", //12
+        /* W, H    */ 240, 303,
+        /* Flags   */ MEMLCD_ADDR_SHARP_SKIPPY | MEMLCD_MONO | MEMLCD_PWR_5V,
+        /* VCOM Hz */ 5
     },
 };
 
@@ -257,6 +269,10 @@ void MEMLCD_send_next_line() {
             cmd[0] = 1 | ((Upd.line<<6)&0xff);
             cmd[1] = (Upd.line>>2) & 0xff;
             break;
+        case MEMLCD_ADDR_SHARP_SKIPPY:
+        	cmd[0] = 1 | ((Upd.line<<7)&0xff);
+        	cmd[1] = (Upd.line>>1) & 0xff;
+        	break;
         case MEMLCD_ADDR_JDI: {
             uint32_t rev_addr = __RBIT(Upd.line) >> 22;
             cmd[0] = 1 | ((rev_addr<<6)&0xff);
