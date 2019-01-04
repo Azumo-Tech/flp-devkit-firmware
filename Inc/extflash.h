@@ -25,4 +25,8 @@ void EXTFLASH_read_screen(EXTFLASH_HandleTypeDef *hflash, uint8_t index, void *b
 
 void EXTFLASH_write_screen(EXTFLASH_HandleTypeDef *hflash, uint8_t index, void *buffer, uint16_t bufsize);
 
+void EXTFLASH_write_screen_sector(EXTFLASH_HandleTypeDef *hflash, uint8_t index, uint8_t sector, void *buffer);
+
+void EXTFLASH_read_screen_sector(EXTFLASH_HandleTypeDef *hflash, uint8_t index, uint8_t sector, void *buffer);
+
 #endif

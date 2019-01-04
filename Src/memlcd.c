@@ -16,9 +16,14 @@
 #include "main.h"
 #include "stm32l1xx_hal.h"
 #include "memlcd.h"
+#include "extflash.h"
+#include "eeprom.h"
 
 #include <string.h>
 #include <stdint.h>
+
+extern EXTFLASH_HandleTypeDef hflash;
+extern volatile uint8_t cur_idx;
 
 struct MEMLCD_Attributes {
     const char *model_name;
@@ -94,12 +99,12 @@ const struct MEMLCD_Attributes MEMLCD_database[] = {
         /* Flags   */ MEMLCD_ADDR_SHARP | MEMLCD_MONO | MEMLCD_PWR_3V,
         /* VCOM Hz */ 60
     },
-	{
-		/* Name    */ "LPM044M141A", //11
-		/* W, H    */ 640, 480,
-		/* Flags   */ MEMLCD_ADDR_JDI | MEMLCD_RGB | MEMLCD_PWR_3V | MEMLCD_ROT270,
-		/* VCOM Hz */ 5
-	},
+    {
+        /* Name    */ "LPM044M141A", //11
+	/* W, H    */ 640, 480,
+	/* Flags   */ MEMLCD_ADDR_JDI | MEMLCD_RGB | MEMLCD_PWR_3V | MEMLCD_ROT270,
+	/* VCOM Hz */ 5
+    },
     {
         /* Name    */ "LS018B7DH02", //12
         /* W, H    */ 240, 303,
@@ -112,7 +117,7 @@ const int MEMLCD_max_model = sizeof(MEMLCD_database)  / sizeof(*MEMLCD_database)
 
 struct MEMLCD_UpdateState {
     MEMLCD_HandleTypeDef *hmemlcd;
-    uint16_t start, end, line;
+    uint16_t start, end, line, sector;
 } Upd;
 
 
@@ -252,7 +257,13 @@ inline static void MEMLCD_tilelayers_mono(MEMLCD_HandleTypeDef *hmemlcd, uint16_
 void MEMLCD_send_next_line() {
     if (Upd.hmemlcd == NULL) return;
     MEMLCD_HandleTypeDef *hmemlcd = Upd.hmemlcd;
-    if (++Upd.line > Upd.end) {
+    int lps = 4096/hmemlcd->line_len;
+    Upd.line++;
+    if ((Upd.line-1) >= Upd.sector*lps) {
+        EXTFLASH_read_screen_sector(&hflash, EEPROM_Settings->slides[cur_idx].img, Upd.sector, (void*)hmemlcd->buffer);
+        Upd.sector++;
+    }
+    if (Upd.line > Upd.end) {
         uint8_t tail[2];
         HAL_SPI_Transmit(hmemlcd->hspi, tail, 2, 10);
         HAL_GPIO_WritePin(hmemlcd->CS_Port, hmemlcd->CS_Pin, 0);
@@ -266,8 +277,8 @@ void MEMLCD_send_next_line() {
             cmd[1] = Upd.line & 0xff;
             break;
         case MEMLCD_ADDR_SHARP_LONG:
-            cmd[0] = 1 | ((Upd.line<<6)&0xff);
-            cmd[1] = (Upd.line>>2) & 0xff;
+            cmd[0] = 1 | (((Upd.line*2)<<6)&0xff);
+            cmd[1] = ((Upd.line*2)>>2) & 0xff;
             break;
         case MEMLCD_ADDR_SHARP_SKIPPY:
         	cmd[0] = 1 | ((Upd.line<<7)&0xff);
@@ -280,7 +291,7 @@ void MEMLCD_send_next_line() {
             break; }
         }
         memset(&cmd[2], 0xff, hmemlcd->line_len);
-        memcpy(&cmd[2], &hmemlcd->buffer[hmemlcd->line_len * (Upd.line-1)], hmemlcd->line_len);
+        memcpy(&cmd[2], &hmemlcd->buffer[hmemlcd->line_len * ((Upd.line-1)%lps)], hmemlcd->line_len);
         if (hmemlcd->flags & MEMLCD_RGB) {
             MEMLCD_tilelayers_RGB(hmemlcd, Upd.line-1, &cmd[2]);
         } else {
@@ -298,6 +309,7 @@ int MEMLCD_busy() {
 
 void MEMLCD_update_area(MEMLCD_HandleTypeDef *hmemlcd, uint16_t start, uint16_t end) {
     if (Upd.hmemlcd != NULL) return;
+    int lps = 4096/hmemlcd->line_len;
     end = (end <= hmemlcd->line_ct)? end : hmemlcd->line_ct;
     start = (start <= end)? start : end;
     HAL_GPIO_WritePin(hmemlcd->CS_Port, hmemlcd->CS_Pin, 1);
@@ -305,6 +317,7 @@ void MEMLCD_update_area(MEMLCD_HandleTypeDef *hmemlcd, uint16_t start, uint16_t 
     Upd.end = end+1;
     Upd.line = start;
     Upd.hmemlcd = hmemlcd;
+    Upd.sector = start/lps;
     MEMLCD_send_next_line();
 }
 

@@ -29,7 +29,8 @@
 
 extern EXTFLASH_HandleTypeDef hflash;
 extern MEMLCD_HandleTypeDef hmemlcd;
-extern uint8_t running;
+extern uint8_t running, cur_idx;
+uint16_t sector_pos, sector;
 
 static enum CMDState {
     CMD_NORMAL,
@@ -70,6 +71,8 @@ size_t BinArgCount;
 static void beginBinTransfer(uint8_t *buf, size_t count) {
     BinArgBuf = buf;
     BinArgCount = count;
+    sector_pos = 0;
+    sector = 0;
     Mode = CMD_READ_BIN_ARG;
 }
 
@@ -79,6 +82,7 @@ uint8_t EchoOn=0;
 
 void CMD_tick() {
     uint8_t chr;
+    int lps = 4096/hmemlcd.line_len;
     while (CDC_read(&chr, 1)) {
         while (EchoOn && CDC_Transmit_FS(&chr, 1) == USBD_BUSY); /* Echo the character back */
         switch (Mode) {
@@ -170,22 +174,27 @@ void CMD_tick() {
                 switch (Command) {
                 case CMD_LOAD: {
                     uint8_t idx = (IntArgv[0] > 24)? 24: IntArgv[0];
-                    EXTFLASH_read_screen(&hflash, idx, (void*)hmemlcd.buffer, MEMLCD_bufsize(&hmemlcd));
+                    //EXTFLASH_read_screen(&hflash, idx, (void*)hmemlcd.buffer, MEMLCD_bufsize(&hmemlcd));
+                    running = 0;
+                    cur_idx = idx;
                     MEMLCD_update_area(&hmemlcd, 0, -1);
                     break; }
                 case CMD_WRITE: {
                     uint8_t idx = (IntArgv[0] > 24)? 24: IntArgv[0];
-                    EXTFLASH_write_screen(&hflash, idx, (void*)hmemlcd.buffer, MEMLCD_bufsize(&hmemlcd));
+                    //EXTFLASH_write_screen(&hflash, idx, (void*)hmemlcd.buffer, MEMLCD_bufsize(&hmemlcd));
                     break; }
                 case CMD_FILL: {
                     if (hmemlcd.flags & MEMLCD_RGB) {
                         uint32_t colormask = (IntArgv[0] & 7) * 0b001001001001001001001001;
-                        for (int y=0; y<hmemlcd.line_ct; y++) {
+                        for (int y=0; y<lps; y++) {
                             for (int x=0; x<hmemlcd.line_len; x+=3) {
                                 hmemlcd.buffer[y*hmemlcd.line_len+x+2] = (colormask >> 16) & 0xff;
                                 hmemlcd.buffer[y*hmemlcd.line_len+x+1] = (colormask >> 8) & 0xff;
                                 hmemlcd.buffer[y*hmemlcd.line_len+x+0] = (colormask) & 0xff;
                             }
+                        }
+                        for (uint8_t sec=0; sec < hflash.stride/4096; sec++) {
+                            EXTFLASH_write_screen_sector(&hflash, cur_idx, sec, (void*)hmemlcd.buffer);
                         }
                     } else {
                         uint8_t color = (IntArgv[0])? 0xff: 0;
@@ -280,8 +289,14 @@ void CMD_tick() {
             }
             break;
         case CMD_READ_BIN_ARG:
-            *BinArgBuf++ = chr;
+            BinArgBuf[sector_pos] = chr;
+            sector_pos++;
             BinArgCount--;
+            if (sector_pos >= lps*hmemlcd.line_len || BinArgCount <= 0) {
+                EXTFLASH_write_screen_sector(&hflash, cur_idx, sector, BinArgBuf);
+                sector_pos = 0;
+                sector++;
+            }
             if (BinArgCount <= 0) {
                 switch (Command) {
                 case CMD_DOWNLOAD:
