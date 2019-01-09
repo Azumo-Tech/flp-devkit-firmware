@@ -42,7 +42,7 @@ void BSP_init() {
         HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, (size_t)&EEPROM_Settings->slide_count, 10);
         HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_HALFWORD, (size_t)&EEPROM_Settings->default_led_current, 20000);
         if (EEPROM_Settings->lcd_model > MEMLCD_max_model) {
-        	HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, (size_t)&EEPROM_Settings->lcd_model, 5);
+        	HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, (size_t)&EEPROM_Settings->lcd_model, 11);
         }
         HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, (size_t)&EEPROM_Settings->flags, 0);
         for (uint8_t i=0; i<64; i++) {
@@ -55,7 +55,9 @@ void BSP_init() {
     hmemlcd.model = EEPROM_Settings->lcd_model;
     MEMLCD_init(&hmemlcd);
     // Set the flash image stride to be able to hold the whole screen, rounded up to a whole number of sectors.
-    hflash.stride = 4096 * ((MEMLCD_bufsize(&hmemlcd) + 4095 ) / 4096);
+    int lines_per_sector = 4096/hmemlcd.line_len;
+    int sectors = (hmemlcd.line_ct + lines_per_sector-1) / lines_per_sector;
+    hflash.stride = 4096*sectors;
 }
 
 int BSP_sleep() {

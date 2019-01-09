@@ -24,7 +24,7 @@
 
 extern MEMLCD_HandleTypeDef hmemlcd;
 
-static uint8_t tilemap[1408];
+static uint8_t tilemap[2400];
 
 
 void printxy(int x, int y, char* format, ...) {
