@@ -5,7 +5,7 @@
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; COPYRIGHT(c) 2018 STMicroelectronics</center></h2>
+  * <h2><center>&copy; COPYRIGHT(c) 2019 STMicroelectronics</center></h2>
   *
   * Redistribution and use in source and binary forms, with or without modification,
   * are permitted provided that the following conditions are met:
@@ -40,7 +40,6 @@
  extern "C" {
 #endif
 
-#include "main.h"
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
 
@@ -73,6 +72,7 @@
 /*#define HAL_UART_MODULE_ENABLED   */
 /*#define HAL_USART_MODULE_ENABLED   */
 /*#define HAL_WWDG_MODULE_ENABLED   */
+/*#define HAL_EXTI_MODULE_ENABLED   */
 #define HAL_GPIO_MODULE_ENABLED
 #define HAL_DMA_MODULE_ENABLED
 #define HAL_RCC_MODULE_ENABLED
@@ -111,6 +111,15 @@
 #endif /* HSI_VALUE */
 
 /**
+  * @brief Internal Low Speed oscillator (LSI) value.
+  */
+#if !defined  (LSI_VALUE) 
+  #define LSI_VALUE    (37000U) /*!< LSI Typical Value in Hz*/
+#endif /* LSI_VALUE */          /*!< Value of the Internal Low Speed oscillator in Hz
+                                     The real value may vary depending on the variations
+                                     in voltage and temperature.*/
+                                     
+/**
   * @brief External Low Speed oscillator (LSE) value.
   *        This value is used by the UART, RTC HAL module to compute the system frequency
   */
@@ -144,6 +153,41 @@
   */
 /* #define USE_FULL_ASSERT    1U */
 
+/* ################## Register callback feature configuration ############### */
+/**
+  * @brief Set below the peripheral configuration  to "1U" to add the support
+  *        of HAL callback registration/deregistration feature for the HAL
+  *        driver(s). This allows user application to provide specific callback
+  *        functions thanks to HAL_PPP_RegisterCallback() rather than overwriting
+  *        the default weak callback functions (see each stm32l0xx_hal_ppp.h file
+  *        for possible callback identifiers defined in HAL_PPP_CallbackIDTypeDef
+  *        for each PPP peripheral).
+  */
+#define USE_HAL_ADC_REGISTER_CALLBACKS        0U
+#define USE_HAL_COMP_REGISTER_CALLBACKS       0U
+#define USE_HAL_DAC_REGISTER_CALLBACKS        0U
+#define USE_HAL_I2C_REGISTER_CALLBACKS        0U
+#define USE_HAL_I2S_REGISTER_CALLBACKS        0U
+#define USE_HAL_IRDA_REGISTER_CALLBACKS       0U
+#define USE_HAL_OPAMP_REGISTER_CALLBACKS      0U
+#define USE_HAL_PCD_REGISTER_CALLBACKS        0U
+#define USE_HAL_RTC_REGISTER_CALLBACKS        0U
+#define USE_HAL_SDMMC_REGISTER_CALLBACKS      0U
+#define USE_HAL_SMARTCARD_REGISTER_CALLBACKS  0U
+#define USE_HAL_SPI_REGISTER_CALLBACKS        0U
+#define USE_HAL_TIM_REGISTER_CALLBACKS        0U
+#define USE_HAL_UART_REGISTER_CALLBACKS       0U
+#define USE_HAL_USART_REGISTER_CALLBACKS      0U
+#define USE_HAL_WWDG_REGISTER_CALLBACKS       0U
+
+/* ################## SPI peripheral configuration ########################## */
+
+/* CRC FEATURE: Use to activate CRC feature inside HAL SPI Driver
+ * Activated: CRC code is present inside driver
+ * Deactivated: CRC code cleaned from driver
+ */
+
+#define USE_SPI_CRC                   0U
 /* Includes ------------------------------------------------------------------*/
 /**
   * @brief Include module's header file 
@@ -152,7 +196,7 @@
 #ifdef HAL_RCC_MODULE_ENABLED
  #include "stm32l1xx_hal_rcc.h"
 #endif /* HAL_RCC_MODULE_ENABLED */
-  
+
 #ifdef HAL_GPIO_MODULE_ENABLED
  #include "stm32l1xx_hal_gpio.h"
 #endif /* HAL_GPIO_MODULE_ENABLED */
@@ -260,6 +304,10 @@
 #ifdef HAL_PCD_MODULE_ENABLED
  #include "stm32l1xx_hal_pcd.h"
 #endif /* HAL_PCD_MODULE_ENABLED */
+
+#ifdef HAL_EXTI_MODULE_ENABLED
+ #include "stm32l1xx_hal_exti.h"
+#endif /* HAL_EXTI_MODULE_ENABLED */
    
 /* Exported macro ------------------------------------------------------------*/
 #ifdef  USE_FULL_ASSERT

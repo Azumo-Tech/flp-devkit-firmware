@@ -31,6 +31,8 @@ extern EXTFLASH_HandleTypeDef hflash;
 extern MEMLCD_HandleTypeDef hmemlcd;
 void SystemClock_Config(void);
 
+extern USBD_HandleTypeDef hUsbDeviceFS;
+
 static const uint32_t DFU_BOOTKEY = 0x157F32D4;
 volatile extern uint32_t __bootlock; /* This is where the bootloader looks for the magic number, defined in the LD script */
 

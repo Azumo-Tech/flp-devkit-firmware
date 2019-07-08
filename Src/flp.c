@@ -16,6 +16,8 @@
 #include "stm32l1xx_hal.h"
 #include "flp.h"
 
+#include "main.h"
+
 extern DAC_HandleTypeDef hdac;
 
 static int16_t offset=120, scale=4481; /* TODO: Load these values from EEPROM */
