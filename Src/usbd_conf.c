@@ -55,6 +55,26 @@ void Error_Handler(void);
 static USBD_StatusTypeDef USBD_Get_USB_Status(HAL_StatusTypeDef hal_status);
 /* USER CODE BEGIN 1 */
 
+/**
+  * @brief Software Device Connection
+  * @param hpcd: PCD handle
+  * @param state: Connection state (0: disconnected / 1: connected)
+  * @retval None
+  */
+void HAL_PCDEx_SetConnectionState(PCD_HandleTypeDef *hpcd, uint8_t state)
+{
+  if (state == 1)
+  {
+    /* Configure Low connection state. */
+    __HAL_SYSCFG_USBPULLUP_ENABLE();
+  }
+  else
+  {
+    /* Configure High connection state. */
+    __HAL_SYSCFG_USBPULLUP_DISABLE();
+  }
+}
+
 /* USER CODE END 1 */
 
 /*******************************************************************************
