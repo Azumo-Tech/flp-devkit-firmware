@@ -30,6 +30,7 @@
 extern EXTFLASH_HandleTypeDef hflash;
 extern MEMLCD_HandleTypeDef hmemlcd;
 extern uint8_t running, cur_idx;
+uint8_t read_idx;
 uint16_t sector_pos, sector;
 
 static enum CMDState {
@@ -65,11 +66,10 @@ static void beginIntArgs(uint8_t count) {
     Mode = CMD_READ_INT_ARG;
 }
 
-uint8_t *BinArgBuf;
+uint8_t BinArgBuf[4096];
 size_t BinArgCount;
 
-static void beginBinTransfer(uint8_t *buf, size_t count) {
-    BinArgBuf = buf;
+static void beginBinTransfer(size_t count) {
     BinArgCount = count;
     sector_pos = 0;
     sector = 0;
@@ -83,6 +83,8 @@ uint8_t EchoOn=0;
 void CMD_tick() {
     uint8_t chr;
     int lps = 4096/hmemlcd.line_len;
+    int max_idx = (hflash.size/hflash.stride) - 2; // Reserve last index for scratchpad area
+    if (max_idx > 254) max_idx = 254;
     while (CDC_read(&chr, 1)) {
         while (EchoOn && CDC_Transmit_FS(&chr, 1) == USBD_BUSY); /* Echo the character back */
         switch (Mode) {
@@ -118,7 +120,9 @@ void CMD_tick() {
                 break;
             case 'D': /* Download bitmap */
                 Command = CMD_DOWNLOAD;
-                beginBinTransfer(hmemlcd.buffer, MEMLCD_bufsize(&hmemlcd));
+                cur_idx = max_idx + 1;
+                read_idx = cur_idx;
+                beginBinTransfer(MEMLCD_bufsize(&hmemlcd));
                 break;
             case 'L': /* Load from flash */
                 Command = CMD_LOAD;
@@ -173,17 +177,26 @@ void CMD_tick() {
             if (CurArg >= Argc) {
                 switch (Command) {
                 case CMD_LOAD: {
-                    uint8_t idx = (IntArgv[0] > 24)? 24: IntArgv[0];
-                    //EXTFLASH_read_screen(&hflash, idx, (void*)hmemlcd.buffer, MEMLCD_bufsize(&hmemlcd));
+                    uint8_t idx = (IntArgv[0] > max_idx)? max_idx: IntArgv[0];
                     running = 0;
                     cur_idx = idx;
+                    read_idx = cur_idx;
                     MEMLCD_update_area(&hmemlcd, 0, -1);
                     break; }
                 case CMD_WRITE: {
-                    uint8_t idx = (IntArgv[0] > 24)? 24: IntArgv[0];
-                    //EXTFLASH_write_screen(&hflash, idx, (void*)hmemlcd.buffer, MEMLCD_bufsize(&hmemlcd));
+                    uint8_t idx = (IntArgv[0] > max_idx)? max_idx: IntArgv[0];
+                    running = 0;
+                    if (idx != read_idx) {
+                        for (uint8_t sec=0; sec < hflash.stride/4096; sec++) {
+                            EXTFLASH_read_screen_sector(&hflash, read_idx, sec, BinArgBuf);
+                            EXTFLASH_write_screen_sector(&hflash, idx, sec, BinArgBuf);
+                        }
+                    }
+                    cur_idx = idx;
+                    MEMLCD_update_area(&hmemlcd, 0, -1);
                     break; }
                 case CMD_FILL: {
+                    running = 0;
                     if (hmemlcd.flags & MEMLCD_RGB) {
                         uint32_t colormask = (IntArgv[0] & 7) * 0b001001001001001001001001;
                         for (int y=0; y<lps; y++) {
@@ -193,16 +206,18 @@ void CMD_tick() {
                                 hmemlcd.buffer[y*hmemlcd.line_len+x+0] = (colormask) & 0xff;
                             }
                         }
-                        for (uint8_t sec=0; sec < hflash.stride/4096; sec++) {
-                            EXTFLASH_write_screen_sector(&hflash, cur_idx, sec, (void*)hmemlcd.buffer);
-                        }
                     } else {
                         uint8_t color = (IntArgv[0])? 0xff: 0;
-                        for (int y=0; y<hmemlcd.line_ct; y++) {
+                        for (int y=0; y<lps; y++) {
                             for (int x=0; x<hmemlcd.line_len; x++) {
                                 hmemlcd.buffer[y*hmemlcd.line_len+x] = color;
                             }
                         }
+                    }
+                    cur_idx = max_idx + 1;
+                    read_idx = cur_idx;
+                    for (uint8_t sec=0; sec < hflash.stride/4096; sec++) {
+                        EXTFLASH_write_screen_sector(&hflash, cur_idx, sec, (void*)hmemlcd.buffer);
                     }
                     MEMLCD_update_area(&hmemlcd, 0,-1 );
                     break; }

@@ -104,6 +104,7 @@ void EXTFLASH_write_screen_sector(EXTFLASH_HandleTypeDef *hflash, uint8_t index,
     EXTFLASH_write_aligned_page(hflash, addr, buffer, bufsize);
 }
 
+
 void EXTFLASH_write_screen(EXTFLASH_HandleTypeDef *hflash, uint8_t index, void *buffer, uint16_t bufsize) {
     uint32_t addr = index*hflash->stride;
     /* Erase the sectors for the image */
