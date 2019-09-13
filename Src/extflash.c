@@ -72,7 +72,7 @@ void EXTFLASH_wait_for_busy(EXTFLASH_HandleTypeDef *hflash) {
 
 void EXTFLASH_write_aligned_page(EXTFLASH_HandleTypeDef *hflash, uint32_t addr, void *buffer, uint16_t size) {
     EXTFLASH_write_enable(hflash);
-    uint8_t cmd[] =  {0x02, addr>>16, (addr>>8)&0xff, 0};
+    uint8_t cmd[] =  {0x02, (addr>>16)&0xff, (addr>>8)&0xff, 0};
     HAL_GPIO_WritePin(hflash->CS_Port, hflash->CS_Pin, 0);
     HAL_SPI_Transmit(hflash->hspi, (void*)cmd, 4, 10);
     HAL_SPI_Transmit(hflash->hspi, buffer, size, 100);
@@ -90,7 +90,8 @@ void EXTFLASH_sector_erase(EXTFLASH_HandleTypeDef *hflash, uint32_t addr) {
 }
 
 void EXTFLASH_write_screen_sector(EXTFLASH_HandleTypeDef *hflash, uint8_t index, uint8_t sector, void *buffer) {
-    uint32_t addr = index*hflash->stride+4096*sector;
+    uint32_t addr = index * hflash->stride;
+    addr += 4096*sector;
     /* Erase the sectors for the image */
     EXTFLASH_sector_erase(hflash, addr);
     /* And overwrite page by page */

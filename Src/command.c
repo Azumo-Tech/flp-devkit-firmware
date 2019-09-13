@@ -67,7 +67,7 @@ static void beginIntArgs(uint8_t count) {
 }
 
 uint8_t BinArgBuf[4096];
-size_t BinArgCount;
+int BinArgCount;
 
 static void beginBinTransfer(size_t count) {
     BinArgCount = count;
@@ -186,6 +186,7 @@ void CMD_tick() {
                 case CMD_WRITE: {
                     uint8_t idx = (IntArgv[0] > max_idx)? max_idx: IntArgv[0];
                     running = 0;
+                    while(MEMLCD_busy());
                     if (idx != read_idx) {
                         for (uint8_t sec=0; sec < hflash.stride/4096; sec++) {
                             EXTFLASH_read_screen_sector(&hflash, read_idx, sec, BinArgBuf);
@@ -308,6 +309,7 @@ void CMD_tick() {
             sector_pos++;
             BinArgCount--;
             if (sector_pos >= lps*hmemlcd.line_len || BinArgCount <= 0) {
+                while(MEMLCD_busy());
                 EXTFLASH_write_screen_sector(&hflash, cur_idx, sector, BinArgBuf);
                 sector_pos = 0;
                 sector++;
