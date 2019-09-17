@@ -25,6 +25,8 @@
 extern EXTFLASH_HandleTypeDef hflash;
 extern volatile uint8_t cur_idx;
 
+volatile uint8_t bg_idx;
+
 struct MEMLCD_Attributes {
     const char *model_name;
     uint16_t width, height;
@@ -171,8 +173,6 @@ void MEMLCD_power_off(MEMLCD_HandleTypeDef *hmemlcd) {
 }
 
 void MEMLCD_clear_all(MEMLCD_HandleTypeDef *hmemlcd){
-	//memset(hmemlcd->buffer, 0, MEMLCD_bufsize(hmemlcd));
-
     uint8_t cmd[2] = {0b100, 0};
     /* For some reason we need to send the command twice for it to work */
     HAL_GPIO_WritePin(hmemlcd->CS_Port, hmemlcd->CS_Pin, 1);
@@ -260,7 +260,7 @@ void MEMLCD_send_next_line() {
     int lps = 4096/hmemlcd->line_len;
     Upd.line++;
     if ((Upd.line-1) >= Upd.sector*lps) {
-        EXTFLASH_read_screen_sector(&hflash, EEPROM_Settings->slides[cur_idx].img, Upd.sector, (void*)hmemlcd->buffer);
+        EXTFLASH_read_screen_sector(&hflash, bg_idx, Upd.sector, (void*)hmemlcd->buffer);
         Upd.sector++;
     }
     if (Upd.line > Upd.end) {
@@ -277,8 +277,8 @@ void MEMLCD_send_next_line() {
             cmd[1] = Upd.line & 0xff;
             break;
         case MEMLCD_ADDR_SHARP_LONG:
-            cmd[0] = 1 | (((Upd.line*2)<<6)&0xff);
-            cmd[1] = ((Upd.line*2)>>2) & 0xff;
+            cmd[0] = 1 | (((Upd.line)<<6)&0xff);
+            cmd[1] = ((Upd.line)>>2) & 0xff;
             break;
         case MEMLCD_ADDR_SHARP_SKIPPY:
         	cmd[0] = 1 | ((Upd.line<<7)&0xff);
@@ -305,6 +305,10 @@ void MEMLCD_send_next_line() {
 
 int MEMLCD_busy() {
     return (Upd.hmemlcd != NULL);
+}
+
+void MEMLCD_set_background_img(uint8_t idx) {
+    bg_idx = idx;
 }
 
 void MEMLCD_update_area(MEMLCD_HandleTypeDef *hmemlcd, uint16_t start, uint16_t end) {
@@ -335,7 +339,7 @@ void MEMLCD_set_model_by_name(MEMLCD_HandleTypeDef *hmemlcd, char* name) {
 }
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi){
-    if (Upd.hmemlcd != NULL || hspi == Upd.hmemlcd->hspi) {
+    if (Upd.hmemlcd != NULL && hspi == Upd.hmemlcd->hspi) {
         MEMLCD_send_next_line();
     }
 }

@@ -19,8 +19,9 @@ struct EEPROMSettings {
     volatile uint8_t slide_count;
     volatile uint8_t lcd_model;
     volatile uint8_t flags;
-    volatile uint8_t pad[2];
-    volatile struct Slide slides[64];
+    volatile uint8_t max_current;
+    volatile uint16_t dac_offset, dac_scale;
+    volatile struct Slide slides[256];
 };
 
 #define EEPROM_Settings ((struct EEPROMSettings *) FLASH_EEPROM_BASE)

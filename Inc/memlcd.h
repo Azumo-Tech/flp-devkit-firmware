@@ -76,6 +76,8 @@ void MEMLCD_set_disp(MEMLCD_HandleTypeDef *hmemlcd, uint8_t state);
 
 void MEMLCD_update_area(MEMLCD_HandleTypeDef *hmemlcd, uint16_t start, uint16_t end);
 
+void MEMLCD_set_background_img(uint8_t idx);
+
 int MEMLCD_busy();
 
 const char * MEMLCD_get_model_name(MEMLCD_HandleTypeDef *hmemlcd);

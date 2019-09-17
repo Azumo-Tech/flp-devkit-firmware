@@ -354,7 +354,7 @@ int main(void)
               FLP_set_current(led_current);
               FLP_on();
           }
-          //EXTFLASH_read_screen(&hflash, EEPROM_Settings->slides[cur_idx].img, (void*)hmemlcd.buffer, MEMLCD_bufsize(&hmemlcd));
+          MEMLCD_set_background_img(EEPROM_Settings->slides[cur_idx].img);
           dirty = 1;
           State = STATE_SLIDESHOW_WAIT;
           break;

@@ -29,9 +29,11 @@
 
 extern EXTFLASH_HandleTypeDef hflash;
 extern MEMLCD_HandleTypeDef hmemlcd;
-extern uint8_t running, cur_idx;
-uint8_t read_idx;
-uint16_t sector_pos, sector;
+
+extern uint8_t dirty, running;
+
+static uint8_t read_idx;
+static uint16_t sector_pos, sector;
 
 static enum CMDState {
     CMD_NORMAL,
@@ -120,8 +122,8 @@ void CMD_tick() {
                 break;
             case 'D': /* Download bitmap */
                 Command = CMD_DOWNLOAD;
-                cur_idx = max_idx + 1;
-                read_idx = cur_idx;
+                MEMLCD_set_background_img(max_idx + 1);
+                read_idx = max_idx + 1;
                 beginBinTransfer(MEMLCD_bufsize(&hmemlcd));
                 break;
             case 'L': /* Load from flash */
@@ -179,22 +181,22 @@ void CMD_tick() {
                 case CMD_LOAD: {
                     uint8_t idx = (IntArgv[0] > max_idx)? max_idx: IntArgv[0];
                     running = 0;
-                    cur_idx = idx;
-                    read_idx = cur_idx;
-                    MEMLCD_update_area(&hmemlcd, 0, -1);
+                    read_idx = idx;
+                    MEMLCD_set_background_img(idx);
+                    dirty = 1;
                     break; }
                 case CMD_WRITE: {
                     uint8_t idx = (IntArgv[0] > max_idx)? max_idx: IntArgv[0];
                     running = 0;
-                    while(MEMLCD_busy());
+
                     if (idx != read_idx) {
                         for (uint8_t sec=0; sec < hflash.stride/4096; sec++) {
                             EXTFLASH_read_screen_sector(&hflash, read_idx, sec, BinArgBuf);
                             EXTFLASH_write_screen_sector(&hflash, idx, sec, BinArgBuf);
                         }
                     }
-                    cur_idx = idx;
-                    MEMLCD_update_area(&hmemlcd, 0, -1);
+                    MEMLCD_set_background_img(idx);
+                    dirty = 1;
                     break; }
                 case CMD_FILL: {
                     running = 0;
@@ -215,12 +217,12 @@ void CMD_tick() {
                             }
                         }
                     }
-                    cur_idx = max_idx + 1;
-                    read_idx = cur_idx;
+                    MEMLCD_set_background_img(max_idx + 1);
+                    read_idx = max_idx + 1;
                     for (uint8_t sec=0; sec < hflash.stride/4096; sec++) {
-                        EXTFLASH_write_screen_sector(&hflash, cur_idx, sec, (void*)hmemlcd.buffer);
+                        EXTFLASH_write_screen_sector(&hflash, read_idx, sec, (void*)hmemlcd.buffer);
                     }
-                    MEMLCD_update_area(&hmemlcd, 0,-1 );
+                    dirty = 1;
                     break; }
                 case CMD_SET_CURRENT: {
                     FLP_set_current(IntArgv[0]);
@@ -310,14 +312,14 @@ void CMD_tick() {
             BinArgCount--;
             if (sector_pos >= lps*hmemlcd.line_len || BinArgCount <= 0) {
                 while(MEMLCD_busy());
-                EXTFLASH_write_screen_sector(&hflash, cur_idx, sector, BinArgBuf);
+                EXTFLASH_write_screen_sector(&hflash, read_idx, sector, BinArgBuf);
                 sector_pos = 0;
                 sector++;
             }
             if (BinArgCount <= 0) {
                 switch (Command) {
                 case CMD_DOWNLOAD:
-                    MEMLCD_update_area(&hmemlcd, 0, -1);
+                    dirty = 1;
                     break;
                 default:
                     break;
