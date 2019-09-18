@@ -188,7 +188,7 @@ void CMD_tick() {
                 case CMD_WRITE: {
                     uint8_t idx = (IntArgv[0] > max_idx)? max_idx: IntArgv[0];
                     running = 0;
-
+                    MEMLCD_abort_update();
                     if (idx != read_idx) {
                         for (uint8_t sec=0; sec < hflash.stride/4096; sec++) {
                             EXTFLASH_read_screen_sector(&hflash, read_idx, sec, BinArgBuf);
@@ -219,6 +219,7 @@ void CMD_tick() {
                     }
                     MEMLCD_set_background_img(max_idx + 1);
                     read_idx = max_idx + 1;
+                    MEMLCD_abort_update();
                     for (uint8_t sec=0; sec < hflash.stride/4096; sec++) {
                         EXTFLASH_write_screen_sector(&hflash, read_idx, sec, (void*)hmemlcd.buffer);
                     }
@@ -311,7 +312,7 @@ void CMD_tick() {
             sector_pos++;
             BinArgCount--;
             if (sector_pos >= lps*hmemlcd.line_len || BinArgCount <= 0) {
-                while(MEMLCD_busy());
+                MEMLCD_abort_update();
                 EXTFLASH_write_screen_sector(&hflash, read_idx, sector, BinArgBuf);
                 sector_pos = 0;
                 sector++;

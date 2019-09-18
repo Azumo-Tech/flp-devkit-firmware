@@ -80,6 +80,8 @@ void MEMLCD_set_background_img(uint8_t idx);
 
 int MEMLCD_busy();
 
+void MEMLCD_abort_update();
+
 const char * MEMLCD_get_model_name(MEMLCD_HandleTypeDef *hmemlcd);
 void MEMLCD_set_model_by_name(MEMLCD_HandleTypeDef *hmemlcd, char* name);
 

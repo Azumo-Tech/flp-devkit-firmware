@@ -117,13 +117,14 @@ const struct MEMLCD_Attributes MEMLCD_database[] = {
 
 const int MEMLCD_max_model = sizeof(MEMLCD_database)  / sizeof(*MEMLCD_database);
 
-struct MEMLCD_UpdateState {
+volatile struct MEMLCD_UpdateState {
     MEMLCD_HandleTypeDef *hmemlcd;
     uint16_t start, end, line, sector;
 } Upd;
 
 
 void MEMLCD_init(MEMLCD_HandleTypeDef *hmemlcd) {
+    MEMLCD_abort_update();
     hmemlcd->flags = MEMLCD_database[hmemlcd->model].flags;
     hmemlcd->width = MEMLCD_database[hmemlcd->model].width;
     hmemlcd->height = MEMLCD_database[hmemlcd->model].height;
@@ -309,6 +310,10 @@ int MEMLCD_busy() {
 
 void MEMLCD_set_background_img(uint8_t idx) {
     bg_idx = idx;
+}
+
+void MEMLCD_abort_update() {
+    Upd.hmemlcd = NULL;
 }
 
 void MEMLCD_update_area(MEMLCD_HandleTypeDef *hmemlcd, uint16_t start, uint16_t end) {
