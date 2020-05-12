@@ -113,6 +113,24 @@ const struct MEMLCD_Attributes MEMLCD_database[] = {
         /* Flags   */ MEMLCD_ADDR_SHARP_SKIPPY | MEMLCD_MONO | MEMLCD_PWR_5V,
         /* VCOM Hz */ 5
     },
+    {
+        /* Name    */ "TN0181ANVNANN", //13
+        /* W, H    */ 256, 256,
+        /* Flags   */ MEMLCD_ADDR_KYOCERA | MEMLCD_MONO | MEMLCD_PWR_3V | MEMLCD_REVERSE_DISP,
+        /* VCOM Hz */ 5
+    },
+    {
+        /* Name    */ "TN0103ANVNANN", //14
+        /* W, H    */ 128, 128,
+        /* Flags   */ MEMLCD_ADDR_KYOCERA | MEMLCD_MONO | MEMLCD_PWR_3V | MEMLCD_REVERSE_DISP,
+        /* VCOM Hz */ 5
+    },
+    {
+            /* Name    */ "TN0216ANVNANN", //15
+            /* W, H    */ 320, 176,
+            /* Flags   */ MEMLCD_ADDR_KYOCERA | MEMLCD_MONO | MEMLCD_PWR_3V | MEMLCD_REVERSE_DISP,
+            /* VCOM Hz */ 5
+    },
 };
 
 const int MEMLCD_max_model = sizeof(MEMLCD_database)  / sizeof(*MEMLCD_database);
@@ -142,7 +160,7 @@ void MEMLCD_init(MEMLCD_HandleTypeDef *hmemlcd) {
     hmemlcd->hspi->Init.CLKPolarity = SPI_POLARITY_LOW;
     hmemlcd->hspi->Init.CLKPhase = SPI_PHASE_1EDGE;
     hmemlcd->hspi->Init.NSS = SPI_NSS_SOFT;
-    hmemlcd->hspi->Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
+    hmemlcd->hspi->Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32;
     hmemlcd->hspi->Init.TIMode = SPI_TIMODE_DISABLE;
     hmemlcd->hspi->Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
     hmemlcd->hspi->Init.CRCPolynomial = 10;
@@ -151,7 +169,7 @@ void MEMLCD_init(MEMLCD_HandleTypeDef *hmemlcd) {
     HAL_SPI_Init(hmemlcd->hspi);
 
     MEMLCD_clear_all(hmemlcd);
-    HAL_GPIO_WritePin(hmemlcd->DISP_Port, hmemlcd->DISP_Pin, 1);
+    MEMLCD_set_disp(hmemlcd, 1);
 
     hmemlcd->htim->Init.Period = 60000/MEMLCD_database[hmemlcd->model].flags;
     HAL_TIM_Base_Init(hmemlcd->htim);
@@ -165,7 +183,7 @@ void MEMLCD_init(MEMLCD_HandleTypeDef *hmemlcd) {
 }
 
 void MEMLCD_power_off(MEMLCD_HandleTypeDef *hmemlcd) {
-    HAL_GPIO_WritePin(hmemlcd->DISP_Port, hmemlcd->DISP_Pin, 0);
+    MEMLCD_set_disp(hmemlcd, 0);
     HAL_GPIO_WritePin(hmemlcd->EXTMODE_Port, hmemlcd->EXTMODE_Pin, 0);
     HAL_GPIO_WritePin(hmemlcd->BOOST_Port, hmemlcd->BOOST_Pin, 0);
     HAL_GPIO_WritePin(hmemlcd->CS_Port, hmemlcd->CS_Pin, 0);
@@ -188,6 +206,9 @@ void MEMLCD_clear_all(MEMLCD_HandleTypeDef *hmemlcd){
 
 
 void MEMLCD_set_disp(MEMLCD_HandleTypeDef *hmemlcd, uint8_t state) {
+    if (hmemlcd->flags & MEMLCD_REVERSE_DISP) {
+        state = !state;
+    }
     HAL_GPIO_WritePin(hmemlcd->DISP_Port, hmemlcd->DISP_Pin, state);
 }
 
@@ -290,6 +311,9 @@ void MEMLCD_send_next_line() {
             cmd[0] = 1 | ((rev_addr<<6)&0xff);
             cmd[1] = (rev_addr>>2) & 0xff;
             break; }
+        case MEMLCD_ADDR_KYOCERA: {
+            cmd[1] = Upd.line & 0xff;
+            break; }
         }
         memset(&cmd[2], 0xff, hmemlcd->line_len);
         memcpy(&cmd[2], &hmemlcd->buffer[hmemlcd->line_len * ((Upd.line-1)%lps)], hmemlcd->line_len);
@@ -299,7 +323,11 @@ void MEMLCD_send_next_line() {
             MEMLCD_tilelayers_mono(hmemlcd, Upd.line-1, &cmd[2]);
         }
         while(hmemlcd->hspi->State == HAL_SPI_STATE_BUSY_TX);
-        HAL_SPI_Transmit_DMA(hmemlcd->hspi, cmd, hmemlcd->line_len+2);
+        if ((hmemlcd->flags & 0xF) == MEMLCD_ADDR_KYOCERA) {
+            HAL_SPI_Transmit_DMA(hmemlcd->hspi, cmd+1, hmemlcd->line_len+5);
+        } else {
+            HAL_SPI_Transmit_DMA(hmemlcd->hspi, cmd, hmemlcd->line_len+2);
+        }
         HAL_GPIO_TogglePin(DBGPIN0_GPIO_Port, DBGPIN0_Pin);
     }
 }

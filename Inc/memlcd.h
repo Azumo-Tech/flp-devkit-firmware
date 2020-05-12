@@ -12,6 +12,7 @@ enum MEMLCD_Flags {
     MEMLCD_ADDR_SHARP_LONG = 0x1,
     MEMLCD_ADDR_JDI = 0x2,
 	MEMLCD_ADDR_SHARP_SKIPPY = 0x3,
+	MEMLCD_ADDR_KYOCERA = 0x4,
     MEMLCD_PWR_5V = 1 << 4,
     MEMLCD_PWR_3V = 0 << 4,
     MEMLCD_MONO = 0 << 5,
@@ -19,6 +20,7 @@ enum MEMLCD_Flags {
     MEMLCD_VFLIP = 1 << 6,
     MEMLCD_HFLIP = 1 << 7,
     MEMLCD_ROT270 = 1<< 9,
+    MEMLCD_REVERSE_DISP = 1<<10,
 };
 
 enum MEMLCD_tile_Flags {
