@@ -131,6 +131,12 @@ const struct MEMLCD_Attributes MEMLCD_database[] = {
             /* Flags   */ MEMLCD_ADDR_KYOCERA | MEMLCD_MONO | MEMLCD_PWR_3V | MEMLCD_REVERSE_DISP,
             /* VCOM Hz */ 5
     },
+	{
+		/* Name    */ "PICTLEAP4.2", //16
+		/* W, H    */ 400, 300,
+		/* Flags   */ MEMLCD_ADDR_JDI | MEMLCD_RGB | MEMLCD_PWR_3V | MEMLCD_ROT270,
+		/* VCOM Hz */ 5
+	},
 };
 
 const int MEMLCD_max_model = sizeof(MEMLCD_database)  / sizeof(*MEMLCD_database);
