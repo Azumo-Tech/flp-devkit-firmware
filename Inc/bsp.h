@@ -1,7 +1,7 @@
 #ifndef BSP_H_
 #define BSP_H_
 
-#define FIRMWARE_VERSION 20201112
+#define FIRMWARE_VERSION 20231222
 
 void BSP_init();
 int BSP_sleep();
